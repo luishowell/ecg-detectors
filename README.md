@@ -48,7 +48,7 @@ r_peaks = detectors.swt_detector(unfiltered_ecg)
 ```
 
 ### Two Moving Average
-Implementation of Elgendi, Mohamed & Jonkman, Mirjam & De Boer, Friso. (2010). "Frequency Bands Effects on QRS Detection" The 3rd International Conference on Bio-inspired Systems and Signal Processing (BIOSIGNALS2010). 428-431.\ 
+Implementation of Elgendi, Mohamed & Jonkman, Mirjam & De Boer, Friso. (2010). "Frequency Bands Effects on QRS Detection" The 3rd International Conference on Bio-inspired Systems and Signal Processing (BIOSIGNALS2010). 428-431.
 Usage:
 ```python
 r_peaks = detectors.two_average_detector(unfiltered_ecg)
