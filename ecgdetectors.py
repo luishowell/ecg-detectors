@@ -370,8 +370,12 @@ class Detectors:
     
     def swt_detector(self, unfiltered_ecg):
 
+        if self.fs == 250:
+            swt_level = 2
+        elif self.fs == 360:
+            swt_level = 3
+
         padding = -1
-        swt_level = 2
         for i in range(1000):
             if (len(unfiltered_ecg)+i)%2**swt_level == 0:
                 padding = i
