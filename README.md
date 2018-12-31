@@ -1,5 +1,5 @@
 # ECG Detectors
-A collection of 7 ECG hearbeat detection algorithms implemented in Python. Developed in conjunction with a new ECG database: [http://researchdata.gla.ac.uk/716/].
+A collection of 7 ECG hearbeat detection algorithms implemented in Python. Developed in conjunction with a new ECG database: http://researchdata.gla.ac.uk/716/.
 
 ## Class Initalisation
 Before the detectors can be used the class must first be initalised with the sampling rate of the ECG recording
