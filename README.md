@@ -1,5 +1,5 @@
 # ECG Detectors
-A collection of 7 ECG hearbeat detection algorithms implemented in Python. Developed in conjunction with a new ECG database (link to be added when database is published).
+A collection of 7 ECG hearbeat detection algorithms implemented in Python. Developed in conjunction with a new ECG database: [http://researchdata.gla.ac.uk/716/].
 
 ## Class Initalisation
 Before the detectors can be used the class must first be initalised with the sampling rate of the ECG recording
@@ -10,7 +10,6 @@ detectors = Detectors(fs)
 
 ### Hamilton
 Implementation of P.S. Hamilton, “Open Source ECG Analysis Software Documentation”, E.P.Limited, 2002.\
-Provided by the the [BioSPPy](https://github.com/PIA-Group/BioSPPy) library.\
 Usage:
 ```python
 r_peaks = detectors.hamilton_detector(unfiltered_ecg)
@@ -18,7 +17,6 @@ r_peaks = detectors.hamilton_detector(unfiltered_ecg)
 
 ### Christov
 Implementation of Ivaylo I. Christov, “Real time electrocardiogram QRS detection using combined adaptive threshold”, BioMedical Engineering OnLine 2004, vol. 3:28, 2004.\
-Provided by the the [BioSPPy](https://github.com/PIA-Group/BioSPPy) library.\
 Usage:
 ```python
 r_peaks = detectors.christov_detector(unfiltered_ecg)
@@ -26,7 +24,6 @@ r_peaks = detectors.christov_detector(unfiltered_ecg)
 
 ### Engelse and Zeelenberg
 Implementation of W. Engelse and C. Zeelenberg, “A single scan algorithm for QRS detection and feature extraction”, IEEE Comp. in Cardiology, vol. 6, pp. 37-42, 1979 with modifications A. Lourenco, H. Silva, P. Leite, R. Lourenco and A. Fred, “Real Time Electrocardiogram Segmentation for Finger Based ECG Biometrics”, BIOSIGNALS 2012, pp. 49-54, 2012.\
-Provided by the the [BioSPPy](https://github.com/PIA-Group/BioSPPy) library.\
 Usage:
 ```python
 r_peaks = detectors.engzee_detector(unfiltered_ecg)
