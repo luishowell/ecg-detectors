@@ -129,6 +129,7 @@ class Detectors:
         ms350 = int(0.35*self.fs)
 
         M = 0
+        newM5 = 0
         M_list = []
         MM = []
         M_slope = np.linspace(1.0, 0.6, ms1200-ms200)
@@ -154,13 +155,13 @@ class Detectors:
                     MM.pop(0)
 
             elif QRS and i < QRS[-1]+ms200:
-
                 newM5 = 0.6*np.max(MA3[QRS[-1]:i])
-
                 if newM5>1.5*MM[-1]:
                     newM5 = 1.1*MM[-1]
 
             elif QRS and i == QRS[-1]+ms200:
+                if newM5==0:
+                    newM5 = MM[-1]
                 MM.append(newM5)
                 if len(MM)>5:
                     MM.pop(0)    
