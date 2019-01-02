@@ -434,10 +434,10 @@ class Detectors:
         filtered_ecg = signal.lfilter(b, a, unfiltered_ecg)
 
         window1 = int(0.12*self.fs)
-        mwa_qrs = MWA(filtered_ecg, window1)
+        mwa_qrs = MWA(abs(filtered_ecg), window1)
 
         window2 = int(0.6*self.fs)
-        mwa_beat = MWA(filtered_ecg, window2)
+        mwa_beat = MWA(abs(filtered_ecg), window2)
 
         blocks = np.zeros(len(unfiltered_ecg))
         block_height = np.max(filtered_ecg)
