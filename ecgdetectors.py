@@ -516,7 +516,7 @@ def searchBack(detected_peaks, unfiltered_ecg, search_samples):
 
 def panPeakDetect(detection, fs):    
 
-    min_distance = int(0.2*fs)
+    min_distance = int(0.25*fs)
     peaks, _ = signal.find_peaks(detection, distance=min_distance)      
 
     signal_peaks = []
