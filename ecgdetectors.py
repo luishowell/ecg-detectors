@@ -32,7 +32,7 @@ class Detectors:
 
         ma[0:len(b)*2] = 0
 
-        peaks, _ = signal.find_peaks(ma, distance=(0.2*self.fs))
+        peaks, _ = signal.find_peaks(ma, distance=(0.25*self.fs))
 
         n_pks = []
         n_pks_ave = 0.0
@@ -371,11 +371,7 @@ class Detectors:
     
     def swt_detector(self, unfiltered_ecg):
 
-        if self.fs == 250:
-            swt_level = 2
-        elif self.fs == 360:
-            swt_level = 3
-
+        swt_level=3
         padding = -1
         for i in range(1000):
             if (len(unfiltered_ecg)+i)%2**swt_level == 0:
@@ -479,9 +475,9 @@ def MWA(input_array, window_size):
     mwa = np.zeros(len(input_array))
     for i in range(len(input_array)):
         if i < window_size:
-            section = abs(input_array[0:i])
+            section = input_array[0:i]
         else:
-            section = abs(input_array[i-window_size:i])
+            section = input_array[i-window_size:i]
         
         if i!=0:
             mwa[i] = np.mean(section)
