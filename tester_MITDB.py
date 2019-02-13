@@ -13,7 +13,7 @@ class MITDB_test:
         self.mitdb_dir = pathlib.Path(mitdb_dir)
 
     
-    def diagnostic_test(self, detector, tolerance=0, print_results = True):
+    def classifier_test(self, detector, tolerance=0, print_results = True):
         dat_files = []
         for file in os.listdir(self.mitdb_dir):
             if file.endswith(".dat"):
@@ -25,7 +25,7 @@ class MITDB_test:
 
         i = 0
         for record in mit_records:
-            progress = int(i/float(len(mit_records))*100)
+            progress = int(i/float(len(mit_records))*100.0)
             print("Progress: %i%%" % progress)
 
             sig, fields = wfdb.rdsamp(self.mitdb_dir/record)
@@ -58,7 +58,7 @@ class MITDB_test:
             
             print("\nSensitivity: %.2f%%" % se)
             print("PPV: %.2f%%" % ppv)
-            print("F1 Score: %.2f%%" % f1)
+            print("F1 Score: %.2f%%\n" % f1)
         
         return results
 
@@ -75,7 +75,6 @@ class MITDB_test:
         b = 0 #pos/neg
         c = 0 #neg/pos
         d = 0 #pos/pos
-        total_anno = 0
         i = 0
         for record in mit_records:
             progress = int(i/float(len(mit_records))*100)
@@ -92,9 +91,8 @@ class MITDB_test:
 
             for sample in anno:
                 result1 = np.any(np.in1d(sample, r_peaks1))
-                result2 = np.any(np.in1d(sample, r_peaks2))
-                
-                total_anno +=1
+                result2 = np.any(np.in1d(sample, r_peaks2))              
+
                 if result1 and result2:
                     d+=1
                 elif result1 and not result2:
@@ -105,9 +103,6 @@ class MITDB_test:
                     a+=1
             
             i+=1
-            
-        print('\nNumber of beats: %i' % total_anno)
-        print('a+b+c+d: %i\n' % (a+b+c+d))
 
         table = np.array([[a, b], [c, d]])
 
@@ -119,6 +114,6 @@ class MITDB_test:
         if print_results:
             print("\n2x2 Table")
             print(table)
-            print("\nZ score: %.4f" % Z)
+            print("\nZ score: %.4f\n" % Z)
         
         return Z

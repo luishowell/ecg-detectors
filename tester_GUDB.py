@@ -1,0 +1,133 @@
+import numpy as np
+import tester_utils
+from ecg_gla_database import Ecg
+
+
+class GUDB_test:
+ 
+
+    def __init__(self, gudb_dir):
+
+        self.gudb_dir = gudb_dir
+
+    
+    def classifier_test(self, detector, config="chest_strap", tolerance=0, print_results = True):
+
+        total_subjects = 25
+
+        results = np.zeros((total_subjects, (4*5)+1))
+
+        for subject_number in range(0, total_subjects):
+            progress = int(subject_number/float(total_subjects)*100.0)
+            print("Progress: %i%%" % progress)
+
+            results[subject_number, 0] = subject_number
+            exp_counter = 1
+            for experiment in Ecg.experiments:
+                
+                ecg_class = Ecg(self.gudb_dir, subject_number, experiment)
+
+                anno_exists = False
+                if config=="chest_strap" and ecg_class.anno_cs_exists:
+                    unfiltered_ecg = ecg_class.cs_V2_V1                   
+                    anno = ecg_class.anno_cs
+                    anno_exists = True
+                elif config=="loose_cables" and ecg_class.anno_cables_exists:
+                    unfiltered_ecg = ecg_class.einthoven_II 
+                    anno = ecg_class.anno_cables
+                    anno_exists = True
+                elif config!="chest_strap" and config!="loose_cables":
+                    print("Config argument must be chest_strap or loose_cables!")
+                    return results
+
+                if anno_exists:                  
+
+                    r_peaks = detector(unfiltered_ecg)    
+
+                    TP, FP, FN = tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
+                    TN = len(unfiltered_ecg)-(TP+FP+FN)
+
+                    results[subject_number, exp_counter] = TP
+                    results[subject_number, exp_counter+1] = FP
+                    results[subject_number, exp_counter+2] = FN
+                    results[subject_number, exp_counter+3] = TN
+
+                exp_counter = exp_counter+4
+
+        if print_results:
+            total_tp = np.sum(np.vstack((results[:, 1],results[:, 5],results[:, 9],results[:, 13],results[:, 17])))
+            total_fp = np.sum(np.vstack((results[:, 2],results[:, 6],results[:, 10],results[:, 14],results[:, 18])))
+            total_fn = np.sum(np.vstack((results[:, 3],results[:, 7],results[:, 11],results[:, 15],results[:, 19])))  
+            
+            se = total_tp/(total_tp+total_fn)*100.0
+            ppv = total_tp/(total_tp+total_fp)*100.0
+            f1 = (2*total_tp)/((2*total_tp)+total_fp+total_fn)*100.0
+            
+            print("\nSensitivity: %.2f%%" % se)
+            print("PPV: %.2f%%" % ppv)
+            print("F1 Score: %.2f%%\n" % f1)
+
+        return results
+
+    
+    def mcnemars_test(self, detector1, detector2, config="chest_strap", tolerance=0, print_results = True):
+
+        total_subjects = 25
+
+        a = 0 #neg/neg
+        b = 0 #pos/neg
+        c = 0 #neg/pos
+        d = 0 #pos/pos
+
+        for subject_number in range(0, total_subjects):
+            progress = int(subject_number/float(total_subjects)*100.0)
+            print("Progress: %i%%" % progress)
+
+            for experiment in Ecg.experiments:
+                
+                ecg_class = Ecg(self.gudb_dir, subject_number, experiment)
+
+                anno_exists = False
+                if config=="chest_strap" and ecg_class.anno_cs_exists:
+                    unfiltered_ecg = ecg_class.cs_V2_V1                   
+                    anno = ecg_class.anno_cs
+                    anno_exists = True
+                elif config=="loose_cables" and ecg_class.anno_cables_exists:
+                    unfiltered_ecg = ecg_class.einthoven_II 
+                    anno = ecg_class.anno_cables
+                    anno_exists = True
+                elif config!="chest_strap" and config!="loose_cables":
+                    print("Config argument must be chest_strap or loose_cables!")
+                    return -1
+
+                if anno_exists:                  
+
+                    r_peaks1 = detector1(unfiltered_ecg)    
+                    r_peaks2 = detector2(unfiltered_ecg)
+
+                    for sample in anno:
+                        result1 = np.any(np.in1d(sample, r_peaks1))
+                        result2 = np.any(np.in1d(sample, r_peaks2))                        
+            
+                        if result1 and result2:
+                            d+=1
+                        elif result1 and not result2:
+                            b+=1
+                        elif not result1 and result2:
+                            c+=1
+                        elif not result1 and not result2:
+                            a+=1
+        
+        table = np.array([[a, b], [c, d]])
+
+        if b==0 or c==0:
+            Z = 0
+        else:
+            Z = (abs(b-c)-1)/np.sqrt(b+c)
+
+        if print_results:
+            print("\n2x2 Table")
+            print(table)
+            print("\nZ score: %.4f\n" % Z)
+        
+        return Z
