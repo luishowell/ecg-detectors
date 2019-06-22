@@ -1,0 +1,592 @@
+#! /bin/sh
+
+# plt_rrs		Joe Mietus		Oct 7 2008
+
+# plt_rrs
+
+USAGE="$0 [options] -R rrfile | record annotator [start [end]]
+	Plot RR intervals or RR interval heart rates
+	options :
+	  [-P 2|4|8|16|24|32] : plot 2, 4, 8, 16, 24 or 32 hours per page
+                               (default: scale page length to data length)
+	  [-R rrfile] : RR interval file : time (sec), interval
+	  [-N] : plot NN intervals instead of RR intervals
+	  [-H] : plot RR/NN interval heart rate
+	  [-F \"filt hwin\"] : filter intervals, plot filtered data
+	  [-f \"filt hwin\"] : filter intervals
+	  [-p] : plot points
+	  [-I c|h|m] : input time format: hh::mm:ss, hours, minutes (default: seconds)
+          [-m] : RR intervals in msec
+	  [-y \"ymin ymax\"] : y axis limits
+	  [-o] : output postscript
+"
+
+DATA=Intervals
+YLABEL="RR (sec)"
+
+while getopts P:R:NHF:f:pI:my:o c
+do
+    case $c in
+	P) PAGELEN=$OPTARG ;;
+	R) RRFILE=$OPTARG ;;
+	N) NFLAG='-a N -r'
+	   YLABEL="NN (sec)" ;;
+	H) HRFLAG=1
+	   DATA="Interval Heart Rate"
+	   YLABEL="HR (bpm)" ;;
+	F) FILT=$OPTARG
+	   PLTFILT=1 ;;
+	f) FILT=$OPTARG ;;
+	p) PPLT=1 ;;
+        I) TIME=$OPTARG ;;
+	m) MFLAG=1 ;;
+	y) YLIMS=$OPTARG ;;
+	o) PS=-ps ;;
+	\?) echo "$USAGE"
+	    exit 1;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
+if test "$RRFILE"
+then
+    if test ! -r "$RRFILE"
+    then
+	echo "$0 : Can't open $RRFILE"
+	exit 1
+    fi
+
+    FORM=`head -1 $RRFILE |
+          awk 'NF>3 {printf "bad"}
+               NF==3 || NF==2 || NF==1  \
+                   {if($1~/[0-9:.]+/) \
+                       {{if($1~/[^0-9:.]+/) printf "bad"}; printf "N1 "}
+                       else printf "A1 "}
+               NF==3 || NF==2 \
+                   {if($2~/[0-9:.]+/) \
+                       {{if($2~/[^0-9:.]+/) printf "bad"}; printf "N2 "}
+                       else printf "A2 "}
+               NF==3 \
+                   {if($3~/[0-9\.]+/) \
+                       {{if($3~/[^0-9:.]+/) printf "bad"}; printf "N3 "}
+                       else printf "A3 "}
+               {printf "\n"}'` >/dev/null
+    NF=`echo $FORM | wc -w`
+    F1=`echo $FORM | awk '{print $1}'`
+    F2=`echo $FORM | awk '{print $2}'`
+    F3=`echo $FORM | awk '{print $3}'`
+    if test $NF -eq 3 -a "$F1" = N1 -a "$F2" = N2 -a "$F3" = A3
+    then :
+    elif test $NF -eq 2 -a "$F1" = N1 -a "$F2" = N2
+    then
+        NOANN=1
+    elif test $NF -eq 2 -a "$F1" = N1 -a "$F2" = A2
+    then
+        TFLAG=1
+    elif test $NF -eq 1 -a "$F1" = N1
+    then
+        NOANN=1
+        TFLAG=1
+    else
+        echo "$RRFILE : bad input format"
+        exit 1
+    fi
+    if test "$NOANN"
+    then
+        echo "$0 : No beat labels"
+        unset NFLAG
+    fi
+else
+    if test $# -lt 2
+    then
+	echo "$USAGE"
+	exit 1
+    fi
+    REC=$1
+    ANN=$2
+    if test ! "`wfdbwhich $REC.$ANN 2>/dev/null`"
+    then
+	echo "$0 : can't read annotator $ANN for record $REC"
+	exit 1
+    fi
+    shift 2
+fi
+
+START=$1
+END=$2
+
+if test "$PS"
+then
+    PTERM=lw
+    export PTERM
+else
+    xpltwin -g 720x940
+fi
+
+if test ! "$START" -o "$START" = "-"
+then
+    START=00:00:00
+fi
+STARTSEC=`seconds $START`
+if test "$STARTSEC" -eq -1
+then
+    echo "$0 : bad start time : $START"
+    exit 1
+fi
+START=`hours $STARTSEC`
+
+if test "$END"
+then
+    ENDSEC=`seconds $END`
+    if test $STARTSEC -gt $ENDSEC
+    then
+	echo "$0: start time greater than end time"
+	exit 1
+    fi
+fi
+
+if test "$PAGELEN" != 2 -a "$PAGELEN" != 4 -a "$PAGELEN" != 8 -a \
+        "$PAGELEN" != 16 -a "$PAGELEN" != 24 -a "$PAGELEN" != 32
+then PAGELEN=s
+fi
+
+if test ! "$YLIMS"
+then
+    if test "$HRFLAG"
+    then YLIMS="0 150"
+    else YLIMS="0 2.0"
+    fi
+elif test `echo $YLIMS | wc -w` -ne 2
+then
+    echo "$0 : [-y \"ymin ymax\"]"
+    exit 1
+fi
+
+
+(
+if test "$RRFILE"
+then
+    cat $RRFILE |
+    (
+    if test "$TFLAG"
+    then awk '{T+=$1}; {printf "%.3f %s\n", T, $0}'
+    else cat
+    fi
+    ) |
+    (
+    if test "$MFLAG" -a "$TFLAG"
+    then awk '{$1/=1000; $2/=1000; print}'
+    elif test "$MFLAG"
+    then awk '{$2/=1000; print}'
+    else cat
+    fi
+    ) |
+    (
+    if test "$TIME" = c
+    then
+        sed 's/[0-9:.][0-9:.]* /&: /' |
+        awk -F: 'NF==2 {print $1, $2}
+                 NF==3 {print $1*60+$2, $3}
+                 NF==4 {print $1*3600+$2*60+$3, $4}'
+    elif test "$TIME" = h
+    then
+        awk '{$1*=3600; print}'
+    elif test "$TIME" = m
+    then
+        awk '{$1*=60; print}'
+    else
+        cat
+    fi
+    ) |
+    (
+    if test "$END"
+    then
+	awk "\$1 >= $STARTSEC && \$1 <= $ENDSEC && \$2!=0 {print}
+	     \$1 > $ENDSEC {exit}"
+    else
+	awk "\$1 >= $STARTSEC && \$2!=0 {print}"
+    fi
+    ) |
+    (
+    if test "$NFLAG"
+    then
+	awk '{RCNT++}
+	     LAST=="N" && $3=="N" {print; NCNT++}
+	     {LAST = $3}
+	     END {printf "NN : RR = %d : %d = %.3f\n", \
+	          NCNT, RCNT, NCNT/RCNT > "foo.n0"}'
+    else
+	cat
+    fi
+    )
+else
+    rrlist $ANN $REC -f $START ${END:+-t} $END $NFLAG -s 2>foo.n0
+fi
+) | awk "{print \$1, \$2}" |
+(
+if test "$HRFLAG"
+then awk '{$2 = 60/$2; print}'
+else cat
+fi
+) |
+(
+if test "$FILT"
+then filt $FILT -p foo.exc -n 2>foo.n1
+else cat
+fi
+) |
+awk '{print $1/3600, $2}' >foo.dat
+
+
+if test $PAGELEN = s
+then
+    DATSTART=`head -1 foo.dat | awk '{print $1}'`
+    DATEND=`tail -1 foo.dat | awk '{print $1}'`
+    PAGELEN=`echo $DATSTART $DATEND |
+              awk '{LEN=$2-$1}
+                   LEN<=2 {print 2; exit}
+                   LEN<=4 {print 4; exit}
+                   LEN<=4 {print 4; exit}
+                   LEN<=8 {print 8; exit}
+                   LEN<=16 {print 16; exit}
+                   LEN<=24 {print 24; exit}
+                   LEN<=32 {print 32; exit}'`
+fi
+
+LINELEN=`echo "scale=2; $PAGELEN / 8" | bc`
+if test $PAGELEN -eq 2
+then
+    XTIC=`echo "1 / 60" | bc -l`
+    XMIN0=`echo $START |
+    sed 's/^.:..$/0&/
+         s/^..:..$/0:&/
+         s/:/ /g' |
+    awk '{if($2<15) $2=0;
+          if($2>=15 && $2<30) $2=0.25;
+          if($2>=30 && $2<45) $2=0.5;
+          if($2>=45) $2=0.75;
+          print $1+$2}'`
+elif test $PAGELEN -eq 4
+then
+    XTIC=`echo "5 / 60" | bc -l`
+    XMIN0=`echo $START |
+    sed 's/^.:..$/0&/
+         s/^..:..$/0:&/
+         s/:/ /g' |
+    awk '{if($2<30) $2=0; if($2>=30) $2=0.5; print $1+$2}'`
+elif test $PAGELEN -eq 8
+then
+    XTIC=`echo "5 / 60" | bc -l`
+    XMIN0=`echo $START |
+    sed 's/^.:..$/0&/
+         s/^..:..$/0:&/
+         s/:.*//'`
+elif test $PAGELEN -eq 16 -o $PAGELEN -eq 24 -o $PAGELEN -eq 32
+then
+    XTIC=`echo "15 / 60" | bc -l`
+    XMIN0=`echo $START |
+    sed 's/^.:..$/0&/
+         s/^..:..$/0:&/
+         s/:.*//'`
+fi
+XMAX7=`echo "scale=2; $XMIN0 + $PAGELEN" | bc`
+
+X0=0.065
+X1=0.965
+
+YMIN=`echo $YLIMS | awk '{print $1}'`
+YMAX=`echo $YLIMS | awk '{print $2}'`
+
+if test "$NFLAG"
+then
+    DATA="NN $DATA"
+    NRR0=`awk '{print $7}' foo.n0`
+    NRR1=`awk '{print $5}' foo.n0`
+else
+    DATA="RR $DATA"
+fi
+if test "$FILT"
+then
+    NRR1=`awk '{print $7}' foo.n1`
+    NRR2=`awk '{print $5}' foo.n1`
+    NFILT=`cat foo.exc | wc -l`
+fi
+if test "$NFLAG" -a "$FILT"
+then
+    RATIO=`echo "$NRR2 $NRR1 $NRR0" | 
+    awk '{printf "Filt : NN : RR = %d : %d : %d = %.3f : %.3f = %.3f\n", \
+          $1, $2, $3, $1/$2, $2/$3, $1/$3}'`
+    EXCLUDED=`echo "$NFILT $NRR1 $NRR0" |
+    awk '{printf "[%d Filtered, %d non-NN]\n", $1, $3-$2}'`
+elif test "$NFLAG" -a ! "$FILT"
+then
+    RATIO=`echo "$NRR1 $NRR0" | 
+    awk '{printf "NN : RR = %d : %d = %.3f\n", $1, $2, $1/$2}'`
+    EXCLUDED=`echo "$NRR1 $NRR0" | 
+    awk '{printf "[%d non-NN]\n", $2-$1}'`
+elif test "$FILT" -a ! "$NFLAG"
+then
+    RATIO=`echo "$NRR2 $NRR1" | 
+    awk '{printf "Filt : RR = %d : %d = %.3f\n", $1, $2, $1/$2}'`
+    EXCLUDED=`echo "$NFILT" | 
+    awk '{printf "[%d Filtered]\n", $1}'`
+fi
+
+if test "$FILT"
+then PROG="filt $FILT"
+fi
+if test "$PROG"
+then PROG="($PROG)"
+fi
+
+if test "$PPLT"
+then
+    P1='p 0,1S5(P2)'
+    P2='p 0,1S0(P5)'
+else
+    P1='p (W0)'
+    P2='p 0,1S5(P5)'
+fi
+
+awk "\$1>=$XMIN0 && \$1<=$XMAX7 {print}
+     \$1>$XMAX7 {print \$1 >\"foo.next\"; exit}" <foo.dat >foo.rr
+
+PAGE=0
+
+while test -s foo.rr -o -s foo.next
+do
+
+PAGE=`expr $PAGE + 1`
+
+XMAX0=`echo "scale=2; $XMIN0 + $LINELEN" | bc`
+XMIN1=$XMAX0
+XMAX1=`echo "scale=2; $XMIN1 + $LINELEN" | bc`
+XMIN2=$XMAX1
+XMAX2=`echo "scale=2; $XMIN2 + $LINELEN" | bc`
+XMIN3=$XMAX2
+XMAX3=`echo "scale=2; $XMIN3 + $LINELEN" | bc`
+XMIN4=$XMAX3
+XMAX4=`echo "scale=2; $XMIN4 + $LINELEN" | bc`
+XMIN5=$XMAX4
+XMAX5=`echo "scale=2; $XMIN5 + $LINELEN" | bc`
+XMIN6=$XMAX5
+XMAX6=`echo "scale=2; $XMIN6 + $LINELEN" | bc`
+XMIN7=$XMAX6
+
+XMIN=$XMIN0
+XMAX=$XMAX0
+
+
+awk "{if(\$2<$YMIN) \$2=$YMIN; if(\$2>$YMAX) \$2=$YMAX}
+     \$1>=$XMIN0 && \$1<=$XMAX0 {print >\"foo.rr0\"}
+     \$1>=$XMIN1 && \$1<=$XMAX1 {print >\"foo.rr1\"}
+     \$1>=$XMIN2 && \$1<=$XMAX2 {print >\"foo.rr2\"}
+     \$1>=$XMIN3 && \$1<=$XMAX3 {print >\"foo.rr3\"}
+     \$1>=$XMIN4 && \$1<=$XMAX4 {print >\"foo.rr4\"}
+     \$1>=$XMIN5 && \$1<=$XMAX5 {print >\"foo.rr5\"}
+     \$1>=$XMIN6 && \$1<=$XMAX6 {print >\"foo.rr6\"}
+     \$1>=$XMIN7 && \$1<=$XMAX7 {print >\"foo.rr7\"}
+     \$1>=$XMAX7 {exit}" <foo.rr
+
+
+if test "$PLTFILT"
+then
+awk "{\$1/=3600}
+     {if(\$2<$YMIN) \$2=$YMIN; if(\$2>$YMAX) \$2=$YMAX}
+     \$1>=$XMIN0 && \$1<=$XMAX0 {print >\"foo.exc0\"}
+     \$1>=$XMIN1 && \$1<=$XMAX1 {print >\"foo.exc1\"}
+     \$1>=$XMIN2 && \$1<=$XMAX2 {print >\"foo.exc2\"}
+     \$1>=$XMIN3 && \$1<=$XMAX3 {print >\"foo.exc3\"}
+     \$1>=$XMIN4 && \$1<=$XMAX4 {print >\"foo.exc4\"}
+     \$1>=$XMIN5 && \$1<=$XMAX5 {print >\"foo.exc5\"}
+     \$1>=$XMIN6 && \$1<=$XMAX6 {print >\"foo.exc6\"}
+     \$1>=$XMIN7 && \$1<=$XMAX7 {print >\"foo.exc7\"}
+     \$1>=$XMAX7 {exit}" <foo.exc
+fi
+
+
+TITLE1="${RRFILE:-$REC $ANN} ($START) : $DATA"
+
+if test "$PAGE" -eq 1
+then
+    if test "$PROG"
+    then
+	TITLE2="$PROG"
+	TITLE3="$RATIO $EXCLUDED"
+    else
+	TITLE2="$RATIO $EXCLUDED"
+    fi
+else
+    TITLE2="$PROG"
+    TITLE3=""
+fi
+
+
+( plt -wm 0 -F"
+  t
+  L (P14) .5 1.005 CT $TITLE1
+  L (P11) .5 0.980 CT $TITLE2
+  L (P11) .5 0.955 CT $TITLE3
+  s f"
+
+  for i in 0 1 2 3 4 5 6 7
+  do
+
+  if test -s foo.rr$i
+  then
+
+  Y0=`echo "scale=4; 0.845 - ($i * 0.114)" | bc`
+  Y1=`echo "scale=4; 0.925 - ($i * 0.114)" | bc`
+
+  if test $PAGELEN -eq 2
+  then
+  echo $XMIN |
+  sed 's/^[0-9][0-9]*$/&.00/
+       s/^\./0&/
+       s/\./ &/' |
+  awk '$2==.00 {printf("xt %f %d:00:00\n", $1+$2, $1);
+                printf("xt %f %d:05:00\n", $1+$2+5/60, $1);
+                printf("xt %f %d:10:00\n", $1+$2+10/60, $1);
+                printf("xt %f %d:15:00\n", $1+$2+0.25, $1);
+                printf("xts %f\n", $1+1/60)}
+       $2==.25 {printf("xt %f %d:15:00\n", $1+$2, $1);
+                printf("xt %f %d:20:00\n", $1+$2+5/60, $1);
+                printf("xt %f %d:25:00\n", $1+$2+10/60, $1);
+                printf("xt %f %d:30:00\n", $1+$2+0.25, $1);
+                printf("xts %f\n", $1+16/60)}
+       $2==.50 {printf("xt %f %d:30:00\n", $1+$2, $1);
+                printf("xt %f %d:35:00\n", $1+$2+5/60, $1);
+                printf("xt %f %d:40:00\n", $1+$2+10/60, $1);
+                printf("xt %f %d:45:00\n", $1+$2+0.25, $1);
+                printf("xts %f\n", $1+31/60)}
+       $2==.75 {printf("xt %f %d:45:00\n", $1+$2, $1);
+                printf("xt %f %d:50:00\n", $1+$2+5/60, $1);
+                printf("xt %f %d:55:00\n", $1+$2+10/60, $1);
+                printf("xt %f %d:00:00\n", $1+$2+0.25, $1+1);
+                printf("xts %f\n", $1+46/60)}' >foo.xlabels
+
+  elif test $PAGELEN -eq 4
+  then
+  echo $XMIN |
+  sed 's/^[0-9][0-9]*$/&.00/
+       s/^\./0&/
+       s/\./ &/' |
+  awk '$2==.00 {printf("xt %f %d:00:00\n", $1+$2, $1);
+                printf("xt %f %d:15:00\n", $1+$2+0.25, $1);
+                printf("xt %f %d:30:00\n", $1+$2+0.50, $1)}
+       $2==.50 {printf("xt %f %d:30:00\n", $1+$2, $1);
+                printf("xt %f %d:45:00\n", $1+$2+0.25, $1);
+                printf("xt %f %d:00:00\n", $1+$2+0.50, $1+1)}' >foo.xlabels
+
+  elif test $PAGELEN -eq 8
+  then
+  echo $XMIN |
+  awk '{printf("xt %f %d:00:00\n", $1, $1);
+        printf("xt %f %d:15:00\n", $1+0.25, $1);
+        printf("xt %f %d:30:00\n", $1+0.50, $1);
+        printf("xt %f %d:45:00\n", $1+0.75, $1);
+        printf("xt %f %d:00:00\n", $1+1.00, $1+1)}' >foo.xlabels
+
+  elif test $PAGELEN -eq 16
+  then
+  echo $XMIN |
+  awk '{printf("xt %f %d:00:00\n", $1, $1);
+        printf("xt %f %d:30:00\n", $1+0.50, $1);
+        printf("xt %f %d:00:00\n", $1+1.00, $1+1);
+        printf("xt %f %d:30:00\n", $1+1.50, $1+1);
+        printf("xt %f %d:00:00\n", $1+2.00, $1+2)}' >foo.xlabels
+
+  elif test $PAGELEN -eq 24
+  then
+  echo $XMIN |
+  awk '{printf("xt %f %d:00:00\n", $1, $1);
+        printf("xt %f %d:00:00\n", $1+1, $1+1);
+        printf("xt %f %d:00:00\n", $1+2, $1+2);
+        printf("xt %f %d:00:00\n", $1+3, $1+3)}' >foo.xlabels
+
+  elif test $PAGELEN -eq 32
+  then
+  echo $XMIN |
+  awk '{printf("xt %f %d:00:00\n", $1, $1);
+        printf("xt %f %d:00:00\n", $1+1, $1+1);
+        printf("xt %f %d:00:00\n", $1+2, $1+2);
+        printf("xt %f %d:00:00\n", $1+3, $1+3);
+        printf("xt %f %d:00:00\n", $1+4, $1+4)}' >foo.xlabels
+
+  fi
+
+
+  plt foo.rr$i % -wms 1 -F"
+  W $X0 $Y0 $X1 $Y1
+  sf all P10
+  t 
+  x
+  y
+  vl -.06 .5 - 1
+  $YLABEL
+  s X
+  s n
+  xa $XMIN $XMAX $XTIC
+  `cat foo.xlabels`
+  ya $YMIN $YMAX
+  $P1"
+
+  if test -s foo.exc$i
+  then
+  plt foo.exc$i -wms 1 -F"
+  W $X0 $Y0 $X1 $Y1
+  sf all P10
+  s t
+  s x
+  s y
+  xa $XMIN $XMAX
+  ya $YMIN $YMAX
+  $P2"
+  fi
+
+  fi
+
+  XMIN=$XMAX
+  XMAX=`echo "scale=2; $XMIN + $LINELEN" | bc`
+
+  done
+
+  if test -s foo.rr
+  then
+  plt : -wms 1 -F"
+  W $X0 $Y0 $X1 $Y1
+  sf all P10
+  s t
+  s x
+  s y
+  hl 0.5 -0.5 - 1
+  TIME (hours)
+  xa $XMIN $XMAX
+  ya $YMIN $YMAX"
+  fi
+
+) |
+(
+if test "$PTERM"
+then cat | lwcat -full $PS
+else cat
+fi
+)
+
+
+rm -f foo.rr? foo.exc? foo.xlabels foo.next
+
+
+XMIN0=$XMAX7
+XMAX7=`echo "scale=2; $XMAX7 + $PAGELEN" | bc`
+
+STARTSEC=`echo "$XMIN0" | awk '{printf "%.0f\n", $1*3600}'`
+START=`hours $STARTSEC`
+
+awk "\$1>$XMIN0 && \$1<=$XMAX7 {print}
+     \$1>$XMAX7 {print \$1 >\"foo.next\"; exit}" <foo.dat >foo.rr
+
+done
+
+rm -f foo.dat foo.rr foo.n? foo.exc foo.next

@@ -1,0 +1,8 @@
+Prerequisites:
+
+https://physionet.org/physiotools/wfdb.shtml
+
+Install:
+
+make
+make install

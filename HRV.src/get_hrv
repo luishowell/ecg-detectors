@@ -1,0 +1,538 @@
+#! /bin/sh
+
+# get_hrv		Joe Mietus		Apr 1 2011
+
+# get_hrv		Joe Mietus		Nov 9 2010
+
+
+USAGE="$0 [options] -R rrfile | record annotator [start [end]]
+	Get HRV statistics :
+	  REC : NN/RR AVNN SDNN SDANN SDNNINDX RMSSD PNN : TOTPWR ULF VLF LF HF LF/HF
+	options :
+	  [-R rrfile] : RR interval file : time (sec), interval
+	  [-f \"filt hwin\"] : filter outliers
+	  [-p \"nndiff ...\"] : nn difference for pnn (default: 50 msec)
+	  [-P \"lo1 hi1 lo2 hi2 lo3 hi3 lo4 hi4\"] : power bands
+		(default : 0 0.0033 0.0033 0.04 0.04 0.15 0.15 0.4)
+	  [-s] : short term stats of
+	         REC : NN/RR AVNN SDNN RMSSD PNN : TOTPWR VLF LF HF LF/HF
+	  [-I c|h|m] : input time format: hh::mm:ss, hours, minutes (default: seconds)
+          [-m] : RR intervals in msec
+	  [-M] : output statistics in msec rather than sec
+	  [-L] : output statistics on one line 
+	  [-S] : plot HRV results on screen
+
+	plotting options :
+	  [-F \"filt hwin\"] : filter outliers, plot filtered data
+	  [-y \"ymin ymax\"] : time series y-axis limits (\"- -\" for self-scaling)
+	  [-X maxfreq] : fft maximum frequency (default : 0.4 Hz)
+	  [-Y fftmax] : fft maximum (\"-\" for self-scaling)
+	  [-o] : output plot in postscript
+
+"
+
+while getopts R:f:p:P:sI:mtMLSF:y:X:Y:o c
+do
+    case $c in
+	R) RRFILE=$OPTARG ;;
+	f) FILT=$OPTARG ;;
+	p) PFLAG="-p $OPTARG" ;;
+	P) PWRBANDS=$OPTARG ;;
+        s) SFLAG='-s' ;;
+        I) TIME=$OPTARG ;;
+	m) MFLAG=1 ;;
+	M) MSEC='-m' ;;
+	L) SLINE=1 ;;
+	S) SCREENPLOT=1 ;;
+	F) FILT=$OPTARG
+	   PLTFILT=1 ;;
+	y) Y0LIMS=$OPTARG
+	   if test `echo $Y0LIMS | wc -w` -ne 2
+	   then
+               echo "$0 : [-y \"ymin ymax\"]"
+               exit 1
+	   fi ;;
+	X) X1MAX=$OPTARG ;;
+	Y) Y1MAX=$OPTARG ;;
+	o) SCREENPLOT=1
+	   PS=-ps ;;
+	\?) echo "$USAGE"
+            exit 1 ;;
+    esac
+done
+
+shift `expr $OPTIND - 1`
+
+if test "$RRFILE"
+then
+    if test ! -r "$RRFILE"
+    then
+	echo "$0 : Can't open $RRFILE"
+	exit 1
+    fi
+
+    NFLAG=1
+    REC=$1
+    ANN=$2
+fi
+
+START=$1
+END=$2
+
+if test ! "$START" -o "$START" = "-"
+then
+    START=00:00:00
+fi
+STARTSEC=`seconds $START`
+if test "$STARTSEC" -eq -1
+then
+    echo "$0 : bad start time : $START"
+    exit 1
+fi
+START=`hours $STARTSEC`
+
+if test "$END"
+then 
+    ENDSEC=`seconds $END`
+    if test $STARTSEC -gt $ENDSEC
+    then
+	echo "$0: start time greater than end time"
+	exit 1
+    fi
+fi
+
+if test ! "$PWRBANDS"
+then
+    if test -n "$SFLAG"
+    then
+        LO1=0
+        HI1=0.04
+        LO2=0.04
+        HI2=0.15
+        LO3=0.15
+        HI3=0.4
+    else
+        LO1=0
+        HI1=0.0033
+        LO2=0.0033
+        HI2=0.04
+        LO3=0.04
+        HI3=0.15
+        LO4=0.15
+        HI4=0.4
+    fi
+    PWRBANDS="$LO1 $HI1 $LO2 $HI2 $LO3 $HI3 $LO4 $HI4"
+elif test "$PWRBANDS" != 0
+then
+    if test `echo $PWRBANDS | wc -w | awk '{print $1%2}'` -ne 0
+    then
+	echo "$0 : [-P \"lo hi [...]\"]"
+	exit 1
+    fi
+fi
+
+FMAX=`echo $PWRBANDS | tr ' ' '\n' | sort -n | tail -1`
+
+(
+if test "$RRFILE"
+then
+    cat $RRFILE |
+    (
+    if test "$TFLAG"
+    then awk '{T+=$1}; {printf "%.3f %s\n", T, $0}'
+    else cat
+    fi
+    ) |
+    (
+    if test "$MFLAG" -a "$TFLAG"
+    then awk '{$1/=1000; $2/=1000; print}'
+    elif test "$MFLAG"
+    then awk '{$2/=1000; print}'
+    else cat
+    fi
+    ) |
+    (
+    if test "$TIME" = c
+    then
+        sed 's/[0-9:.][0-9:.]* /&: /' |
+        awk -F: 'NF==2 {print $1, $2}
+                 NF==3 {print $1*60+$2, $3}
+                 NF==4 {print $1*3600+$2*60+$3, $4}'
+    elif test "$TIME" = h
+    then
+        awk '{$1*=3600; print}'
+    elif test "$TIME" = m
+    then
+        awk '{$1*=60; print}'
+    else
+        cat
+    fi
+    ) |
+    (
+    if test "$END"
+    then
+	awk "\$1>=$STARTSEC && \$1<=$ENDSEC && \$2!=0 {print}
+	     \$1>$ENDSEC {exit}"
+    else
+	awk "\$1>=$STARTSEC && \$2!=0 {print}"
+    fi
+    ) |
+    (
+    if test "$NFLAG"
+    then
+        awk '{print $1, $2, "N"}'
+    else
+        cat
+    fi
+    )
+else
+    rrlist $ANN $REC -f $START ${END:+-t} $END -s
+fi
+) >foo.rr
+
+cat foo.rr |
+(
+if test "$FILT"
+then
+    filtnn $FILT -n 2>foo.nrr | sort -k 1n
+else
+    awk '{RR++}
+         LAST=="N" && $3=="N" {NN++}
+         {print; LAST=$3}
+         END {printf "NN : RR = %d : %d = %f\n",  NN, RR, NN/RR >"foo.nrr"}'
+fi
+) |
+(
+if test "$MSEC"
+then
+    awk '{$2*=1000; print}'
+else
+    cat
+fi
+) |
+awk 'NR==1 {T0=$1}
+     {print $1-T0, $2, $3}' >foo.frr
+
+
+cat foo.frr |
+statnn $SFLAG $MSEC $PFLAG >foo.nnstat
+NNSTATS=`cat foo.nnstat`
+
+cat foo.frr |
+awk 'LAST=="N" && $3=="N" {print $1, $2}; {LAST=$3}' |
+tee foo.nn |
+lomb - |
+tee foo.fft |
+awk "\$1<=$FMAX {print}" |
+pwr $PWRBANDS |
+sed 's/Total/TOT PWR/
+     s/0 - 0.0033/ULF PWR/
+     s/0.0033 - 0.04/VLF PWR/
+     s/0 - 0.04/VLF PWR/
+     s/0.04 - 0.15/LF PWR/
+     s/0.15 - 0.4/HF PWR/' |
+awk '{print}
+     $1=="LF" {LF=$4}
+     $1=="HF" {HF=$4}
+     END {printf "LF/HF = %g\n", LF/HF}' >foo.pwr
+NNPWRS=`cat foo.pwr | sed 's/  */ /'`
+
+if test ! "$PS"
+then
+   (
+    echo "${REC:-$RRFILE} :"
+    cat foo.nnstat  | awk -F= '{printf "%-8s = %g\n", $1, $2}'
+    cat foo.pwr | awk -F= '{printf "%-8s = %g\n", $1, $2}'
+    ) |
+    (
+    if test "$SLINE"
+    then
+        sed '/TOT.*/i\
+             :
+             s/.*= //' |
+             tr '\n' ' ' | awk '{print}' | sed 's/  */ /g'
+    else
+        cat
+    fi
+    ) 
+fi
+
+if test ! "$SCREENPLOT"
+then
+    rm -f foo.rr foo.frr foo.nn foo.nrr foo.nnstat foo.fft foo.pwr foo.ab
+    exit
+fi
+
+##################################################################################
+
+if test "$PS"
+then
+    PTERM=lw
+    export PTERM
+else
+    xpltwin -g 720x940
+fi
+
+RATIO=`cat foo.nrr | 
+       awk '{printf "Filt : NN : RR = %d : %d : %d = %.3f : %.3f = %.3f\n", \
+                     $7, $9, $11, $13, $15, $17}'` 
+EXCLUDED=`cat foo.nrr |
+          awk 'NF==17 {printf "[%d Filtered, %d non-NN]\n", $9-$7, $11-$9}
+               NF==9 {printf "[%d non-NN]\n", $7-$5}'`
+ 
+PROG="NN interval"
+if test "$FILT"
+then PROG="$PROG, filt $FILT"
+fi
+PROG="$PROG, lomb"
+
+TITLE="${RRFILE:-$REC $ANN} ($START)"
+
+(
+plt -wm 0 : -F"
+t
+L (P14) 0.5 0.99 CC $TITLE
+L (P12) 0.5 0.96 CC ($PROG)
+L (P12) 0.5 0.93 CC $RATIO $EXCLUDED
+s f"
+
+cat foo.rr |
+(
+if test "$FILT"
+then
+    filtnn $FILT -p | sort -k 1n
+else
+    cat
+fi
+) |
+(
+if test "$MSEC"
+then
+    awk '{$2*=1000; print}'
+else
+    cat
+fi
+) |
+(
+if test -z "$ZFLAG"
+then
+    awk 'NR==1 {T0=$1}
+         {print $1-T0, $2, $3}'
+else
+    cat
+fi
+) >foo.frr
+
+X0MIN=`head -1 foo.frr | awk '{print $1/60}'`
+X0MAX=`tail -1 foo.frr | awk '{print $1/60}'`
+if test `expr "$X0MAX" : '\(.*\)\..*'` -ge 120
+then
+    X0MAX=`echo $X0MAX | awk '{print $1/60}'`
+    TUNIT=hr
+else
+    TUNIT=min
+fi
+
+if test "$MSEC"
+then
+    if test ! "$Y0LIMS"
+    then
+        Y0LIMS="0 2000"
+    fi
+    IUNIT="msec"
+    PNN="%"
+    PUNIT="msec2"
+    cat foo.nnstat |
+    sed "s/^[^p].*NN.*/& $IUNIT/
+         s/rMSSD.*/& $IUNIT/
+         s/pNN.*/& $PNN/" |
+    awk 'NR==1 {printf "%s %s %.3f %s\n", $1, $2, $3, $4}
+         NR>1 {printf "%s %s %.2f %s\n", $1, $2, $3, $4}' >foo.nnstat.hl
+    cat foo.pwr |
+    sed "s/.*PWR.*/& $PUNIT/" |
+    awk 'NF==5 {printf "%s %s %s %.2f %s\n", $1, $2, $3, $4, $5}
+         NF==3 {printf "%s %s %.4f\n", $1, $2, $3}' >foo.pwr.hl
+else
+    if test ! "$Y0LIMS"
+    then
+        Y0LIMS="0 2.0"
+    fi
+    IUNIT="sec"
+    PNN=""
+    PUNIT="sec2"
+    cat foo.nnstat |
+    sed "s/^[^p].*NN.*/& $IUNIT/
+         s/rMSSD.*/& $IUNIT/
+         s/pNN.*/& $PNN/" |
+    awk 'NR==1 {printf "%s %s %.3f %s\n", $1, $2, $3, $4}
+         NR>1 {printf "%s %s %.4f %s\n", $1, $2, $3, $4}' >foo.nnstat.hl
+    cat foo.pwr |
+    sed "s/.*PWR.*/& $PUNIT/" |
+    awk 'NF==5 {printf "%s %s %s %.6f %s\n", $1, $2, $3, $4, $5}
+         NF==3 {printf "%s %s %.4f\n", $1, $2, $3}' >foo.pwr.hl
+fi
+TLINES=`wc foo.nnstat.hl | awk '{print $1}'`
+FLINES=`wc foo.pwr.hl | awk '{print $1}'`
+
+Y0MIN=`expr "$Y0LIMS" : '\([^ ]*\)'`
+Y0MAX=`expr "$Y0LIMS" : '.* \(.*\)'`
+
+cat foo.frr |
+(
+if test "$PLTFILT"
+then
+    cat
+else
+    awk 'LAST=="N" && $3=="N" {print}; {LAST=$3}'
+fi
+) |
+(
+if test "$Y0MIN" = "-"
+then
+    if test "$Y0MAX" = "-"
+    then
+        awk "{\$1/=60; print}"
+    else
+        awk "{if(\$2>$Y0MAX) \$2=$Y0MAX;
+              \$1/=60; print}"
+    fi
+else
+    if test "$Y0MAX" = "-"
+    then
+        awk "{if(\$2<$Y0MIN) \$2=$Y0MIN; 
+              \$1/=60; print}"
+    else
+        awk "{if(\$2<$Y0MIN) \$2=$Y0MIN; 
+              if(\$2>$Y0MAX) \$2=$Y0MAX;
+              \$1/=60; print}"
+    fi
+fi
+) |
+(
+if test $TUNIT = hr
+then
+    awk '{$1/=60; print}'
+else
+    cat
+fi
+) >foo.frr1
+mv foo.frr1 foo.frr
+
+cat foo.frr |
+plt 0 1 -wms 1 -F"
+W 0.10 0.69 0.95 0.87
+sf all P13
+t
+x Time ($TUNIT)
+y NN Interval ($IUNIT)
+xa $X0MIN $X0MAX
+ya $Y0MIN $Y0MAX
+s p
+fa foo.axes"
+
+cat foo.frr |
+awk 'LAST=="N" && $3=="N" {print}
+     {LAST=$3}' |
+plt 0 1 -wms 1 -F"
+sf all P13
+f foo.axes"
+
+if test "$PLTFILT"
+then
+    cat foo.frr | sed '/N/d' >foo.exc
+
+    # plot non-normals
+    cat foo.exc |
+    sed '/X/d' |
+    plt 0 1 -wms 1 -F"
+    sf all P12
+    lp 0.2 1.23 0
+    le 0 0 
+    L 0.19 1.14 LC Non-normal
+    f foo.axes
+    o
+    p 0,1S0(P6)" 2>/dev/null
+
+    # plot filtered beats
+    cat foo.exc |
+    sed -n '/X/p' |
+    plt 0 1 -wms 1 -F"
+    sf all P12
+    lp 0.7 1.23 0
+    le 0 0 
+    L 0.69 1.14 LC Outliers
+    f foo.axes
+    o
+    p 0,1S5(P6)" 2>/dev/null
+
+    rm foo.exc
+fi
+
+# NN interval histogram
+
+N=`wc foo.nn | awk '{print $1}'` 
+cat foo.nn | awk '{print $2}' | sort | uniq -c |
+awk "{print \$1/$N, \$2}" |
+plt % -wms 1 -F"
+W 0.1 0.38 0.4 0.57
+sf all P13
+t NN Interval Histogram
+x NN interval ($IUNIT)
+y Probability
+p 1,0i"
+
+# Power spectrum
+
+if test ! "$X1MAX"
+then
+    X1MAX=$FMAX
+elif test "$X1MAX" = "-"
+then
+    X1MAX=`sed -n '$p' foo.fft | awk '{print $1}'`
+fi
+
+if test ! "$Y1MAX"
+then
+    cat foo.fft | awk "\$1<=$X1MAX {SUM+=\$2*\$2; N++}
+                       END {printf \"%.1g\n\", 20*SUM/N}" >foo.y1max
+    Y1MAX=`cat foo.y1max`
+    rm foo.y1max
+elif test "$Y1MAX" = "-"
+then
+    cat foo.fft | awk "\$1<=$X1MAX {print \$2*\$2}" | max >foo.y1max
+    Y1MAX=`cat foo.y1max`
+    rm foo.y1max
+fi
+
+cat foo.fft |
+awk '{print $1, $2*$2}' |
+awk "\$1<=$X1MAX {if(\$2>$Y1MAX) \$2=$Y1MAX; print}" |
+plt 0 1 -wms 1 -F"
+W 0.6 0.38 0.9 0.57
+sf all P13
+t Lomb NN Interval Spectrum
+x Frequency (Hz)
+y Power ($PUNIT)
+xa 0 $X1MAX
+ya 0 $Y1MAX"
+
+
+# HRV stats
+plt : -wms 1 -F"
+sf all P13
+hl (P12) 0.075 -2.3 LC $TLINES
+`cat foo.nnstat.hl`
+hl (P12) 0.64 -2.3 LC $FLINES
+`cat foo.pwr.hl`
+f foo.axes"
+
+) |
+(
+if test "$PTERM"
+then cat | lwcat -full $PS
+else cat
+fi
+)
+
+rm -f foo.rr foo.frr foo.nn foo.nrr foo.nnstat foo.fft foo.pwr foo.ab
+rm -f foo.axes foo.nnstat.hl foo.pwr.hl
