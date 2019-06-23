@@ -1,8 +1,10 @@
 import numpy as np
+import pandas as pd
 import wfdb
 import tester_utils
 import pathlib
 import os
+from ecgdetectors import Detectors
 
 
 class MITDB_test:
@@ -13,7 +15,7 @@ class MITDB_test:
         self.mitdb_dir = pathlib.Path(mitdb_dir)
 
     
-    def classifier_test(self, detector, tolerance=0, print_results = True):
+    def single_classifier_test(self, detector, tolerance=0, print_results = True):
         dat_files = []
         for file in os.listdir(self.mitdb_dir):
             if file.endswith(".dat"):
@@ -21,7 +23,7 @@ class MITDB_test:
         
         mit_records = [w.replace(".dat", "") for w in dat_files]
         
-        results = np.zeros((len(mit_records), 5))
+        results = np.zeros((len(mit_records), 5), dtype=int)
 
         i = 0
         for record in mit_records:
@@ -61,6 +63,44 @@ class MITDB_test:
             print("F1 Score: %.2f%%\n" % f1)
         
         return results
+
+
+    def classifer_test_all(self, tolerance=0):
+
+        det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
+        output_names = ['TP', 'FP', 'FN', 'TN']
+
+        total_records = 0
+        for file in os.listdir(self.mitdb_dir):
+            if file.endswith(".dat"):
+                total_records = total_records + 1
+
+        total_results = np.zeros((total_records, 4*len(det_names)), dtype=int)
+
+        counter = 0
+        for det_name in det_names:
+
+            print('\n'+det_name)
+
+            result = self.single_classifier_test(tester_utils.det_from_name(det_name, 360), tolerance=tolerance, print_results=False)
+            index_labels = result[:, 0]
+            result = result[:, 1:]
+
+            total_results[:, counter:counter+4] = result
+
+            counter = counter+4  
+
+        col_labels = []
+
+        for det_name in det_names:
+                for output_name in output_names:
+                    label = det_name+" "+output_name
+                    col_labels.append(label)
+
+        total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
+        total_results_pd.to_csv('results_MITDB'+'_'+tester_utils.get_time()+'.csv', sep=',')
+
+        return total_results_pd
 
 
     def mcnemars_test(self, detector1, detector2, tolerance=0, print_results = True):

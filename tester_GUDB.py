@@ -14,35 +14,13 @@ from ecg_gla_database import Ecg
 
 
 class GUDB_test:
-
-
-    def _det(self, detector_name):
-        fs = 250
-        detectors = Detectors(fs)
-        
-        if detector_name=='two_average':
-            return detectors.two_average_detector
-        elif detector_name=='matched_filter':
-            return detectors.matched_filter_detector
-        elif detector_name=='swt':
-            return detectors.swt_detector
-        elif detector_name=='engzee':
-            return detectors.engzee_detector
-        elif detector_name=='christov':
-            return detectors.christov_detector
-        elif detector_name=='hamilton':
-            return detectors.hamilton_detector
-        elif detector_name=='pan_tompkins':
-            return detectors.pan_tompkins_detector
-        else:
-            raise RuntimeError('invalid detector name!')
  
     
-    def single_classifier_test(self, detector, config="chest_strap", tolerance=0, print_results = True):
+    def single_classifier_test(self, detector, tolerance=0, config="chest_strap", print_results = True):
 
         total_subjects = Ecg.total_subjects
 
-        results = np.zeros((total_subjects, (4*len(Ecg.experiments))+1))
+        results = np.zeros((total_subjects, (4*len(Ecg.experiments))+1), dtype=int)
 
         for subject_number in range(0, total_subjects):
             progress = int(subject_number/float(total_subjects)*100.0)
@@ -97,22 +75,19 @@ class GUDB_test:
         return results
 
 
-    def classifer_test_all(self, config="chest_strap", tolerance=0):
-
-        fs = 250
-        detectors = Detectors(fs)
+    def classifer_test_all(self, tolerance=0, config="chest_strap"):
 
         det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
         output_names = ['TP', 'FP', 'FN', 'TN']
 
-        total_results = np.zeros((Ecg.total_subjects, 4*len(Ecg.experiments)*len(det_names)))
+        total_results = np.zeros((Ecg.total_subjects, 4*len(Ecg.experiments)*len(det_names)), dtype=int)
 
         counter = 0
         for det_name in det_names:
 
             print('\n'+det_name)
 
-            result = self.single_classifier_test(self._det(det_name), config=config, tolerance=tolerance, print_results=False)
+            result = self.single_classifier_test(tester_utils.det_from_name(det_name, 250), tolerance=tolerance, config=config, print_results=False)
             result = result[:, 1:]
 
             total_results[:, counter:counter+(4*len(Ecg.experiments))] = result
@@ -129,7 +104,7 @@ class GUDB_test:
                     col_labels.append(label)
 
         total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
-        total_results_pd.to_csv('complete_results.csv', sep=',')
+        total_results_pd.to_csv('results_GUDB_'+config+'_'+tester_utils.get_time()+'.csv', sep=',')
 
         return total_results_pd
 

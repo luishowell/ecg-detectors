@@ -1,4 +1,6 @@
 import numpy as np
+from ecgdetectors import Detectors
+from datetime import datetime
 
 
 def sort_MIT_annotations(ann):
@@ -28,3 +30,34 @@ def evaluate_detector(test, annotation, tol=0):
     FN = len(reference)-TP 
 
     return TP, FP, FN
+
+
+def det_from_name(detector_name, fs):
+
+        detectors = Detectors(fs)
+
+        if detector_name=='two_average':
+                return detectors.two_average_detector
+        elif detector_name=='matched_filter':
+                return detectors.matched_filter_detector
+        elif detector_name=='swt':
+                return detectors.swt_detector
+        elif detector_name=='engzee':
+                return detectors.engzee_detector
+        elif detector_name=='christov':
+                return detectors.christov_detector
+        elif detector_name=='hamilton':
+                return detectors.hamilton_detector
+        elif detector_name=='pan_tompkins':
+                return detectors.pan_tompkins_detector
+        else:
+                raise RuntimeError('invalid detector name!')
+
+
+def get_time():
+
+        time = str(datetime.now().time())
+        time = time[:5]
+        time = time.replace(':', '.')
+        
+        return time
