@@ -1,21 +1,48 @@
 import numpy as np
+import pandas as pd
 import tester_utils
+import pathlib
+from ecgdetectors import Detectors
+
+current_dir = pathlib.Path(__file__).resolve()
+data_dir = str(pathlib.Path(current_dir).parents[1]/'ecg_heartbeatdet'/'experiment_data')
+code_dir = str(pathlib.Path(current_dir).parents[1]/'ecg_heartbeatdet'/'example_code')
+
+import sys
+sys.path.insert(0, code_dir)
 from ecg_gla_database import Ecg
 
 
 class GUDB_test:
+
+
+    def _det(self, detector_name):
+        fs = 250
+        detectors = Detectors(fs)
+        
+        if detector_name=='two_average':
+            return detectors.two_average_detector
+        elif detector_name=='matched_filter':
+            return detectors.matched_filter_detector
+        elif detector_name=='swt':
+            return detectors.swt_detector
+        elif detector_name=='engzee':
+            return detectors.engzee_detector
+        elif detector_name=='christov':
+            return detectors.christov_detector
+        elif detector_name=='hamilton':
+            return detectors.hamilton_detector
+        elif detector_name=='pan_tompkins':
+            return detectors.pan_tompkins_detector
+        else:
+            raise RuntimeError('invalid detector name!')
  
-
-    def __init__(self, gudb_dir):
-
-        self.gudb_dir = gudb_dir
-
     
-    def classifier_test(self, detector, config="chest_strap", tolerance=0, print_results = True):
+    def single_classifier_test(self, detector, config="chest_strap", tolerance=0, print_results = True):
 
-        total_subjects = 25
+        total_subjects = Ecg.total_subjects
 
-        results = np.zeros((total_subjects, (4*5)+1))
+        results = np.zeros((total_subjects, (4*len(Ecg.experiments))+1))
 
         for subject_number in range(0, total_subjects):
             progress = int(subject_number/float(total_subjects)*100.0)
@@ -25,7 +52,7 @@ class GUDB_test:
             exp_counter = 1
             for experiment in Ecg.experiments:
                 
-                ecg_class = Ecg(self.gudb_dir, subject_number, experiment)
+                ecg_class = Ecg(data_dir, subject_number, experiment)
 
                 anno_exists = False
                 if config=="chest_strap" and ecg_class.anno_cs_exists:
@@ -37,7 +64,7 @@ class GUDB_test:
                     anno = ecg_class.anno_cables
                     anno_exists = True
                 elif config!="chest_strap" and config!="loose_cables":
-                    print("Config argument must be chest_strap or loose_cables!")
+                    raise RuntimeError("Config argument must be chest_strap or loose_cables!")
                     return results
 
                 if anno_exists:                  
@@ -69,10 +96,47 @@ class GUDB_test:
 
         return results
 
+
+    def classifer_test_all(self, config="chest_strap", tolerance=0):
+
+        fs = 250
+        detectors = Detectors(fs)
+
+        det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
+        output_names = ['TP', 'FP', 'FN', 'TN']
+
+        total_results = np.zeros((Ecg.total_subjects, 4*len(Ecg.experiments)*len(det_names)))
+
+        counter = 0
+        for det_name in det_names:
+
+            print('\n'+det_name)
+
+            result = self.single_classifier_test(self._det(det_name), config=config, tolerance=tolerance, print_results=False)
+            result = result[:, 1:]
+
+            total_results[:, counter:counter+(4*len(Ecg.experiments))] = result
+
+            counter = counter+(4*len(Ecg.experiments))        
+
+        index_labels = np.arange(Ecg.total_subjects)
+        col_labels = []
+
+        for det_name in det_names:
+            for experiment_name in Ecg.experiments:
+                for output_name in output_names:
+                    label = det_name+" "+experiment_name+" "+output_name
+                    col_labels.append(label)
+
+        total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
+        total_results_pd.to_csv('complete_results.csv', sep=',')
+
+        return total_results_pd
+
     
     def mcnemars_test(self, detector1, detector2, config="chest_strap", tolerance=0, print_results = True):
 
-        total_subjects = 25
+        total_subjects = Ecg.total_subjects
 
         a = 0 #neg/neg
         b = 0 #pos/neg
@@ -85,7 +149,7 @@ class GUDB_test:
 
             for experiment in Ecg.experiments:
                 
-                ecg_class = Ecg(self.gudb_dir, subject_number, experiment)
+                ecg_class = Ecg(data_dir, subject_number, experiment)
 
                 anno_exists = False
                 if config=="chest_strap" and ecg_class.anno_cs_exists:
