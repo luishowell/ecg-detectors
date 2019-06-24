@@ -7,17 +7,13 @@ import matplotlib.pyplot as plt
 # output_names = ['TP', 'FP', 'FN', 'TN']
 
 
-def str_join(a, b, c=None):
+def str_join(a, b, c):
 
     a = np.array(a)
     b = np.array(b)
+    c = np.array(c)
 
-    if c==None:
-        str_array = np.core.defchararray.add(a, b)
-    
-    else:
-        c = np.array(c)
-        str_array = np.core.defchararray.add(np.core.defchararray.add(a, b), c)
+    str_array = np.core.defchararray.add(np.core.defchararray.add(a, b), c)
 
     return str_array
 
@@ -30,10 +26,10 @@ def summed_results(results_df, detector_name, experiments=None):
         fn_col_names = str_join(detector_name+' ', experiments, ' FN')
         tn_col_names = str_join(detector_name+' ', experiments, ' TN')
     else:
-        tp_col_names = str_join(detector_name+' ', 'TP')
-        fp_col_names = str_join(detector_name+' ', 'FP')
-        fn_col_names = str_join(detector_name+' ', 'FN')
-        tn_col_names = str_join(detector_name+' ', 'TN')      
+        tp_col_names = detector_name+' '+'TP'
+        fp_col_names = detector_name+' '+'FP'
+        fn_col_names = detector_name+' '+'FN'
+        tn_col_names = detector_name+' '+'TN'      
 
     total_tp = np.sum(results_df.loc[:, tp_col_names].values)
     total_fp = np.sum(results_df.loc[:, fp_col_names].values)
@@ -71,12 +67,15 @@ def f1(results_df, detector_name, experiments=None):
 
 
 gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_11.21.csv', dtype=int, index_col=0)
+mitdb_results = pd.read_csv('results_MITDB_13.49.csv', dtype=int, index_col=0)
 
 experiment_names = ['sitting','maths','walking','hand_bike','jogging']
 
 
 print(sensitivity(gudb_cs_results, 'two_average', experiment_names))
-
 print(ppv(gudb_cs_results, 'two_average', experiment_names))
-
 print(f1(gudb_cs_results, 'two_average', experiment_names))
+print()
+print(sensitivity(mitdb_results, 'two_average'))
+print(ppv(mitdb_results, 'two_average'))
+print(f1(mitdb_results, 'two_average'))
