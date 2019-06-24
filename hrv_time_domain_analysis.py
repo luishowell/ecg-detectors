@@ -24,6 +24,10 @@ sitting_true_sd = []
 total_subjects = 25
 subject = []
 
+if len(sys.argv) < 2:
+    print("Specify 'e' for Einthoven or 'v' for chest strap ECG.")
+    exit(1)
+
 for i in range(total_subjects):
 #for i in range(2):
     print(i)
@@ -39,12 +43,20 @@ for i in range(total_subjects):
 
         hrv_class = HRV(sitting_class.fs)
 
-        r_peaks = detectors.swt_detector(sitting_class.cs_V2_V1)
+        if "e" in sys.argv[1]:
+            ecg_channel = sitting_class.einthoven_II
+        elif "v" in sys.argv[1]:
+            ecg_channel = sitting_class.cs_V2_V1
+        else:
+            print("Bad argument. Specify 'e' for Einthoven or 'v' for the Chest strap.")
+            exit(1)
+
+        r_peaks = detectors.swt_detector(ecg_channel)
         sitting_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
         r_peaks = detectors.swt_detector(maths_class.cs_V2_V1)
         maths_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
 
-        sitting_error_rr = detectors.two_average_detector(sitting_class.cs_V2_V1)
+        sitting_error_rr = detectors.two_average_detector(ecg_channel)
         sitting_error_rr_sd.append(hrv_class.RMSSD(sitting_error_rr,True))
 
         maths_error_rr = detectors.two_average_detector(maths_class.cs_V2_V1)
