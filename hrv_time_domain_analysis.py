@@ -40,21 +40,21 @@ for i in range(total_subjects):
         hrv_class = HRV(sitting_class.fs)
 
         r_peaks = detectors.swt_detector(sitting_class.einthoven_II)
-        sitting_rr_sd.append(hrv_class.RMSSD(r_peaks))
+        sitting_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
         r_peaks = detectors.swt_detector(maths_class.einthoven_II)
-        maths_rr_sd.append(hrv_class.RMSSD(r_peaks))
+        maths_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
 
         sitting_error_rr = detectors.two_average_detector(sitting_class.einthoven_II)
-        sitting_error_rr_sd.append(hrv_class.RMSSD(sitting_error_rr))
+        sitting_error_rr_sd.append(hrv_class.RMSSD(sitting_error_rr,True))
 
         maths_error_rr = detectors.two_average_detector(maths_class.einthoven_II)
-        maths_error_rr_sd.append(hrv_class.RMSSD(maths_error_rr))
+        maths_error_rr_sd.append(hrv_class.RMSSD(maths_error_rr,True))
 
         maths_true_rr = maths_class.anno_cs
-        maths_true_sd.append(hrv_class.RMSSD(maths_true_rr))
+        maths_true_sd.append(hrv_class.RMSSD(maths_true_rr,True))
         
         sitting_true_rr = sitting_class.anno_cs
-        sitting_true_sd.append(hrv_class.RMSSD(sitting_true_rr))
+        sitting_true_sd.append(hrv_class.RMSSD(sitting_true_rr,True))
 
 
 subject = np.array(subject)
@@ -86,13 +86,11 @@ avg_maths_rr_sd = np.average(maths_rr_sd)
 sd_maths_rr_sd = np.std(maths_rr_sd)
 
 plt.bar([0,1],[avg_sitting_rr_sd,avg_maths_rr_sd],yerr=[sd_sitting_rr_sd,sd_maths_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-plt.ylim([0,100])
+#plt.ylim([0,100])
 plt.title("WAVELET: Sitting vs Math")
 
 t,p = stats.ttest_rel(sitting_rr_sd,maths_rr_sd)
 print("WAVELET (sitting vs math): p=",p)
-
-plt.figure()
 
 # and stats with error
 
@@ -108,8 +106,10 @@ sd_sitting_true_sd = np.std(sitting_true_sd)
 avg_maths_true_sd = np.average(maths_true_sd)
 sd_maths_true_sd = np.std(maths_true_sd)
 
+plt.figure()
+
 plt.bar([0,1],[avg_sitting_error_rr_sd,avg_maths_error_rr_sd],yerr=[sd_sitting_error_rr_sd,sd_maths_error_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-plt.ylim([0,100])
+#plt.ylim([0,100])
 plt.title("TWO AVG DETECTOR: Sitting vs Math")
 
 t,p = stats.ttest_rel(sitting_error_rr_sd,maths_error_rr_sd)
@@ -117,17 +117,11 @@ print("TWO AVG DETECTOR (sitting vs math): p=",p)
 
 plt.figure()
 
-plt.bar([0,1,2],
-        [avg_maths_true_sd,avg_maths_error_rr_sd,avg_maths_rr_sd],
-        yerr=[sd_maths_true_sd,sd_maths_error_rr_sd,sd_maths_rr_sd],
-        align='center', alpha=0.5, ecolor='black', capsize=10)
-plt.title("(Math task) Ground truth vs avg det vs wavelet det")
+plt.bar([0,1],[avg_sitting_true_sd,avg_maths_true_sd],yerr=[sd_sitting_true_sd,sd_maths_true_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
+#plt.ylim([0,100])
+plt.title("GROUND TRUTH: Sitting vs Math")
 
-t,p = stats.ttest_rel(maths_true_sd,maths_error_rr_sd)
-print("(Math task) Ground truth vs 2 avgerage det: p=",p)
-
-t,p = stats.ttest_rel(maths_true_sd,maths_rr_sd)
-print("(Math task) Ground truth vs wavelet det: p=",p)
-
+t,p = stats.ttest_rel(sitting_true_sd,maths_true_sd)
+print("GROUND TRUTH (sitting vs math): p=",p)
 
 plt.show()
