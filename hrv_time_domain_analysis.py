@@ -39,15 +39,15 @@ for i in range(total_subjects):
 
         hrv_class = HRV(sitting_class.fs)
 
-        r_peaks = detectors.swt_detector(sitting_class.einthoven_II)
+        r_peaks = detectors.swt_detector(sitting_class.cs_V2_V1)
         sitting_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
-        r_peaks = detectors.swt_detector(maths_class.einthoven_II)
+        r_peaks = detectors.swt_detector(maths_class.cs_V2_V1)
         maths_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
 
-        sitting_error_rr = detectors.two_average_detector(sitting_class.einthoven_II)
+        sitting_error_rr = detectors.two_average_detector(sitting_class.cs_V2_V1)
         sitting_error_rr_sd.append(hrv_class.RMSSD(sitting_error_rr,True))
 
-        maths_error_rr = detectors.two_average_detector(maths_class.einthoven_II)
+        maths_error_rr = detectors.two_average_detector(maths_class.cs_V2_V1)
         maths_error_rr_sd.append(hrv_class.RMSSD(maths_error_rr,True))
 
         maths_true_rr = maths_class.anno_cs
