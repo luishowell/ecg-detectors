@@ -1,3 +1,9 @@
+Intro:
+
+This is a modified version of the HRV tools from physionet:
+https://physionet.org/tutorials/hrv-toolkit/
+so that the tool accepts the CVS export from hrv.py.
+
 Prerequisites:
 
 https://physionet.org/physiotools/wfdb.shtml
@@ -5,4 +11,4 @@ https://physionet.org/physiotools/wfdb.shtml
 Install:
 
 make
-make install
+sudo make install
