@@ -1,4 +1,8 @@
 #
+# A collection of 7 ECG heartbeat detection algorithms implemented
+# in Python. Developed in conjunction with a new ECG database:
+# http://researchdata.gla.ac.uk/716/.
+#
 # Copyright (C) 2019 Luis Howell & Bernd Porr
 # GPL GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
 #
@@ -10,13 +14,8 @@ from biosppy import ecg
 
 
 class Detectors:
-    """
-    A collection of 7 ECG heartbeat detection algorithms implemented
-    in Python. Developed in conjunction with a new ECG database:
-    http://researchdata.gla.ac.uk/716/. This repository also contains a
-    testing class for the MITDB and the new University of Glasgow
-    database.
-    General useage instructions: 
+    """ECG heartbeat detection algorithms
+    General useage instructions:
     r_peaks = detectors.the_detector(ecg_in_samples)
     The argument ecg_in_samples is a single channel ECG in volt
     at the given sample rate.
@@ -24,15 +23,15 @@ class Detectors:
     
     def __init__(self, sampling_frequency):
         """
-        Takes the sampling rate in Hz of the ECG data.
+        The constructor takes the sampling rate in Hz of the ECG data.
         """
 
         self.fs = sampling_frequency
 
 
     def hamilton_detector(self, unfiltered_ecg):
-        """Hamilton detector
-        Implementation of P.S. Hamilton, 
+        """
+        P.S. Hamilton, 
         Open Source ECG Analysis Software Documentation, E.P.Limited, 2002.
         """
         
@@ -112,8 +111,8 @@ class Detectors:
 
     
     def christov_detector(self, unfiltered_ecg):
-        """Christov
-        Implementation of Ivaylo I. Christov, 
+        """
+        Ivaylo I. Christov, 
         Real time electrocardiogram QRS detection using combined 
         adaptive threshold, BioMedical Engineering OnLine 2004, 
         vol. 3:28, 2004.
@@ -255,7 +254,7 @@ class Detectors:
 
     
     def engzee_detector(self, unfiltered_ecg):
-        """Engelse and Zeelenberg Implementation of W. Engelse and
+        """
         C. Zeelenberg, A single scan algorithm for QRS detection and
         feature extraction, IEEE Comp. in Cardiology, vol. 6,
         pp. 37-42, 1979 with modifications A. Lourenco, H. Silva,
@@ -372,7 +371,8 @@ class Detectors:
 
     
     def matched_filter_detector(self, unfiltered_ecg):
-        """FIR matched filter using template of QRS complex.
+        """
+        FIR matched filter using template of QRS complex.
         Template provided for 250Hz and 360Hz.
         Uses the Pan and Tompkins thresholding method.
         """
@@ -408,13 +408,14 @@ class Detectors:
 
     
     def swt_detector(self, unfiltered_ecg):
-        """Stationary Wavelet Transform 
-        Implementation based on Vignesh
-        Kalidas and Lakshman Tamil. Real-time QRS detector using
-        Stationary Wavelet Transform for Automated ECG Analysis. In:
-        2017 IEEE 17th International Conference on Bioinformatics and
-        Bioengineering (BIBE). Uses the Pan and Tompkins thresolding
-        method.
+        """
+        Stationary Wavelet Transform 
+        based on Vignesh Kalidas and Lakshman Tamil. 
+        Real-time QRS detector using Stationary Wavelet Transform 
+        for Automated ECG Analysis. 
+        In: 2017 IEEE 17th International Conference on 
+        Bioinformatics and Bioengineering (BIBE). 
+        Uses the Pan and Tompkins thresolding.
         """
         
         swt_level=3
@@ -447,8 +448,8 @@ class Detectors:
 
 
     def pan_tompkins_detector(self, unfiltered_ecg):
-        """Pan and Tompkins
-        Implementation of Jiapu Pan and Willis J. Tompkins.
+        """
+        Jiapu Pan and Willis J. Tompkins.
         A Real-Time QRS Detection Algorithm. 
         In: IEEE Transactions on Biomedical Engineering 
         BME-32.3 (1985), pp. 230–236.
@@ -477,8 +478,8 @@ class Detectors:
 
 
     def two_average_detector(self, unfiltered_ecg):
-        """Two Moving Average
-        Implementation of Elgendi, Mohamed & Jonkman, 
+        """
+        Elgendi, Mohamed & Jonkman, 
         Mirjam & De Boer, Friso. (2010).
         Frequency Bands Effects on QRS Detection.
         The 3rd International Conference on Bio-inspired Systems 
