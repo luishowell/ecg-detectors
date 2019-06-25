@@ -156,17 +156,6 @@ class HRV:
         return heart_rates
 
 
-    def HR_FFT(self, rr_samples):
-
-        hr = self.HR(rr_samples)
-
-        f = np.fft.fft(hr)
-        f = np.abs(f)
-        f[0] = 0
-
-        return f
-
-    
     def add_rr_error(self, rr_samples, error):
         """
         Adds jitter to the heartrate timestamps. 
@@ -181,6 +170,7 @@ class HRV:
 
         return noisy_rr_samples
 
+    
     def fAnalysis(self, rr_samples):
         """
         Frequency analysis to calc self.lf, self.hf, returns the LF/HF-ratio and
@@ -221,6 +211,7 @@ class HRV:
         # hf
         return self.lf/self.hf
 
+    
     def hrv_toolkit(self, rr_samples):
         """
         Calculating the HRV parameters with the HRV toolkit.
