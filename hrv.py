@@ -1,3 +1,11 @@
+# A collection of heartrate variability algorithms for
+# both the timedomain and frequency domain.
+#
+# Copyright (C) 2019 Luis Howell & Bernd Porr
+# GPL GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
+#
+
+
 import numpy as np
 import random
 import subprocess

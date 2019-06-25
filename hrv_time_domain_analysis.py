@@ -1,3 +1,17 @@
+# Performs heartrate variation timedomain analysis
+#
+# It calculates the normalised RMSSD during sitting
+# and a math test.
+#
+# This comparison is then run with
+# - ground truth (hand corrected R time stamps)
+# - Wavelet detector
+# - two averages detector
+#
+# Via the commandline argument one can choose
+# Einthoven II or the ECG from the Chest strap
+#
+
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
