@@ -26,7 +26,7 @@ class HRV:
         will assume it's at this sampling rate.
         """
 
-        self.fs = sampling_frequency
+        self.fs = float(sampling_frequency)
         self.period = 1.0/sampling_frequency
 
     
@@ -39,7 +39,7 @@ class HRV:
         :rtype: ndarray
         """
 
-        rr_intervals = np.diff(rr_samples*self.period*1000)
+        rr_intervals = np.diff(np.array(rr_samples)*self.period*1000)
 
         return rr_intervals
 
@@ -53,7 +53,7 @@ class HRV:
         :rtype: array_like
         """
 
-        ts = rr_samples*self.period*1000
+        ts = np.array(rr_samples)*self.period*1000
 
         return ts
 
