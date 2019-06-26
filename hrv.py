@@ -26,20 +26,20 @@ class HRV:
         will assume it's at this sampling rate.
         """
 
-        self.fs = sampling_frequency
+        self.fs = float(sampling_frequency)
         self.period = 1.0/sampling_frequency
 
     
     def _intervals(self, rr_samples):
 
-        rr_intervals = np.diff(rr_samples*self.period*1000)
+        rr_intervals = np.diff(np.array(rr_samples)*self.period*1000)
 
         return rr_intervals
 
     
     def _timestamps(self, rr_samples):
 
-        ts = rr_samples*self.period*1000
+        ts = np.array(rr_samples)*self.period*1000
 
         return ts
 
