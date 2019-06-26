@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import tester_utils
+import _tester_utils
 import pathlib
 from ecgdetectors import Detectors
 
@@ -49,7 +49,7 @@ class GUDB_test:
 
                     r_peaks = detector(unfiltered_ecg)    
 
-                    TP, FP, FN = tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
+                    TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
                     TN = len(unfiltered_ecg)-(TP+FP+FN)
 
                     results[subject_number, exp_counter] = TP
@@ -87,7 +87,7 @@ class GUDB_test:
 
             print('\n'+det_name)
 
-            result = self.single_classifier_test(tester_utils.det_from_name(det_name, 250), tolerance=tolerance, config=config, print_results=False)
+            result = self.single_classifier_test(_tester_utils.det_from_name(det_name, 250), tolerance=tolerance, config=config, print_results=False)
             result = result[:, 1:]
 
             total_results[:, counter:counter+(4*len(Ecg.experiments))] = result
@@ -104,7 +104,7 @@ class GUDB_test:
                     col_labels.append(label)
 
         total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
-        total_results_pd.to_csv('results_GUDB_'+config+'_'+tester_utils.get_time()+'.csv', sep=',')
+        total_results_pd.to_csv('results_GUDB_'+config+'_'+_tester_utils.get_time()+'.csv', sep=',')
 
         return total_results_pd
 

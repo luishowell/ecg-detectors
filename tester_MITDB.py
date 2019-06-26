@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import wfdb
-import tester_utils
+import _tester_utils
 import pathlib
 import os
 from ecgdetectors import Detectors
@@ -34,11 +34,11 @@ class MITDB_test:
             unfiltered_ecg = sig[:, 0]  
 
             ann = wfdb.rdann(str(self.mitdb_dir/record), 'atr')    
-            anno = tester_utils.sort_MIT_annotations(ann)    
+            anno = _tester_utils.sort_MIT_annotations(ann)    
 
             r_peaks = detector(unfiltered_ecg)    
 
-            TP, FP, FN = tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
+            TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
             TN = len(unfiltered_ecg)-(TP+FP+FN)
 
             results[i, 0] = int(record)    
@@ -82,7 +82,7 @@ class MITDB_test:
 
             print('\n'+det_name)
 
-            result = self.single_classifier_test(tester_utils.det_from_name(det_name, 360), tolerance=tolerance, print_results=False)
+            result = self.single_classifier_test(_tester_utils.det_from_name(det_name, 360), tolerance=tolerance, print_results=False)
             index_labels = result[:, 0]
             result = result[:, 1:]
 
@@ -98,7 +98,7 @@ class MITDB_test:
                     col_labels.append(label)
 
         total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
-        total_results_pd.to_csv('results_MITDB'+'_'+tester_utils.get_time()+'.csv', sep=',')
+        total_results_pd.to_csv('results_MITDB'+'_'+_tester_utils.get_time()+'.csv', sep=',')
 
         return total_results_pd
 
@@ -124,7 +124,7 @@ class MITDB_test:
             unfiltered_ecg = sig[:, 0]  
 
             ann = wfdb.rdann(str(self.mitdb_dir/record), 'atr')    
-            anno = tester_utils.sort_MIT_annotations(ann)    
+            anno = _tester_utils.sort_MIT_annotations(ann)    
 
             r_peaks1 = detector1(unfiltered_ecg)    
             r_peaks2 = detector2(unfiltered_ecg)
