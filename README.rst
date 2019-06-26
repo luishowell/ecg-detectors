@@ -9,9 +9,11 @@ analyse heartrate variability.
 ECG Detector Class Usage
 ========================
 
-Before the detectors can be used the class must first be initalised with the sampling rate of the ECG recording::
+Before the detectors can be used the class must first be initalised with the sampling rate of the ECG recording:
 
-  python from ecgdetectors import Detectors
+.. code-block:: python
+
+  from ecgdetectors import Detectors
   detectors = Detectors(fs)
 
 See the https://github.com/luishowell/ecg-detectors for usage examples.
