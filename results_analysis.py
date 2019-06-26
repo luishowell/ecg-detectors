@@ -68,11 +68,11 @@ def autolabel(rects):
     """
     for rect in rects:
         height = rect.get_height()
-        ax.text(rect.get_x() + rect.get_width()/2.0, 1.01*height,'%.2f' % height,ha='center', va='bottom')
+        ax.text(rect.get_x() + rect.get_width()/2.0, 1.005*height,'%.2f' % height,ha='center', va='bottom')
 
 
-gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_11.21.csv', dtype=int, index_col=0)
-gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_15.35.csv', dtype=int, index_col=0)
+gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_00.00.csv', dtype=int, index_col=0)
+gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_23.50.csv', dtype=int, index_col=0)
 mitdb_results = pd.read_csv('results_MITDB_13.49.csv', dtype=int, index_col=0)
 
 det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
@@ -131,14 +131,17 @@ ax.set_xticklabels(det_names)
 autolabel(rects1)
 
 fig, ax = plt.subplots()
-rects1 = ax.bar(x_pos, gudb_cs_se, width)
-rects2 = ax.bar(x_pos+width, gudb_cable_se, width)
-ax.set_ylabel('PPV (%)')
-ax.set_title('Detector PPV on GUDB')
+rects1 = ax.bar(x_pos, gudb_cs_f1, width)
+rects2 = ax.bar(x_pos+width, gudb_cable_f1, width)
+ax.set_ylim(70, 100)
+ax.set_ylabel('F1 (%)')
+ax.set_title('Detector F1 on GUDB no find_peaks')
 ax.set_xticks(x_pos + width / 2)
 ax.set_xticklabels(det_names)
 ax.legend((rects1[0], rects2[0]), ('Chest Strap', 'Loose Cables'))
 autolabel(rects1)
 autolabel(rects2)
+
+plt.tight_layout()
 
 plt.show()

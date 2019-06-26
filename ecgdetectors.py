@@ -52,13 +52,11 @@ class Detectors:
 
         ma[0:len(b)*2] = 0
 
-        peaks, _ = signal.find_peaks(ma, distance=(0.25*self.fs))
-
         n_pks = []
         n_pks_ave = 0.0
         s_pks = []
         s_pks_ave = 0.0
-        QRS = []
+        QRS = [0]
         RR = []
         RR_ave = 0.0
 
@@ -66,40 +64,47 @@ class Detectors:
 
         i=0
         idx = []
-        for peak in peaks:
+        peaks = []  
 
-            if ma[peak] > th:        
-                QRS.append(peak)
-                idx.append(i)
-                s_pks.append(ma[peak])
-                if len(n_pks)>8:
-                    s_pks.pop(0)
-                s_pks_ave = np.mean(s_pks)
+        for i in range(len(ma)):
 
-                if RR_ave != 0.0:
-                    if QRS[-1]-QRS[-2] > 1.5*RR_ave:
-                        missed_peaks = peaks[idx[-2]+1:idx[-1]]
-                        for missed_peak in missed_peaks:
-                            if missed_peak-peaks[idx[-2]]>int(0.360*self.fs) and ma[missed_peak]>0.5*th:
-                                QRS.append(missed_peak)
-                                QRS.sort()
-                                break
+            if i>0 and i<len(ma)-1:
+                if ma[i-1]<ma[i] and ma[i+1]<ma[i]:
+                    peak = i
+                    peaks.append(i)
 
-                if len(QRS)>2:
-                    RR.append(QRS[-1]-QRS[-2])
-                    if len(RR)>8:
-                        RR.pop(0)
-                    RR_ave = int(np.mean(RR))
+                    if ma[peak] > th and (peak-QRS[-1])>0.3*self.fs:        
+                        QRS.append(peak)
+                        idx.append(i)
+                        s_pks.append(ma[peak])
+                        if len(n_pks)>8:
+                            s_pks.pop(0)
+                        s_pks_ave = np.mean(s_pks)
 
-            else:
-                n_pks.append(ma[peak])
-                if len(n_pks)>8:
-                    n_pks.pop(0)
-                n_pks_ave = np.mean(n_pks)
+                        if RR_ave != 0.0:
+                            if QRS[-1]-QRS[-2] > 1.5*RR_ave:
+                                missed_peaks = peaks[idx[-2]+1:idx[-1]]
+                                for missed_peak in missed_peaks:
+                                    if missed_peak-peaks[idx[-2]]>int(0.360*self.fs) and ma[missed_peak]>0.5*th:
+                                        QRS.append(missed_peak)
+                                        QRS.sort()
+                                        break
 
-            th = n_pks_ave + 0.45*(s_pks_ave-n_pks_ave)
+                        if len(QRS)>2:
+                            RR.append(QRS[-1]-QRS[-2])
+                            if len(RR)>8:
+                                RR.pop(0)
+                            RR_ave = int(np.mean(RR))
 
-            i+=1
+                    else:
+                        n_pks.append(ma[peak])
+                        if len(n_pks)>8:
+                            n_pks.pop(0)
+                        n_pks_ave = np.mean(n_pks)
+
+                    th = n_pks_ave + 0.45*(s_pks_ave-n_pks_ave)
+
+                    i+=1
 
         QRS.pop(0)
 
@@ -436,13 +441,14 @@ class Detectors:
 
         squared = swt_ecg*swt_ecg
 
-        N = int(0.12*self.fs)
-        mwa = MWA(squared, N)
-        mwa[:int(0.2*self.fs)] = 0
+        f1 = 0.01/self.fs
+        f2 = 10/self.fs
 
-        mwa_peaks = panPeakDetect(mwa, self.fs)
+        b, a = signal.butter(3, [f1*2, f2*2], btype='bandpass')
+        filtered_squared = signal.lfilter(b, a, squared)       
 
-        r_peaks = searchBack(mwa_peaks, unfiltered_ecg, N)
+        filt_peaks = panPeakDetect(filtered_squared, self.fs)
+        r_peaks = searchBack(filt_peaks, unfiltered_ecg, int(0.1*self.fs))
 
         return r_peaks
 
@@ -573,9 +579,8 @@ def searchBack(detected_peaks, unfiltered_ecg, search_samples):
 def panPeakDetect(detection, fs):    
 
     min_distance = int(0.25*fs)
-    peaks, _ = signal.find_peaks(detection, distance=min_distance)      
 
-    signal_peaks = []
+    signal_peaks = [0]
     noise_peaks = []
 
     SPKI = 0.0
@@ -589,41 +594,48 @@ def panPeakDetect(detection, fs):
     indexes = []
 
     missed_peaks = []
-    for peak in peaks:
+    peaks = []
 
-        if detection[peak] > threshold_I1:
-               
-            signal_peaks.append(peak)
-            indexes.append(index)
-            SPKI = 0.125*detection[signal_peaks[-1]] + 0.875*SPKI
-            if RR_missed!=0:
-                if signal_peaks[-1]-signal_peaks[-2]>RR_missed:
-                    missed_section_peaks = peaks[indexes[-2]+1:indexes[-1]]
-                    missed_section_peaks2 = []
-                    for missed_peak in missed_section_peaks:
-                        if missed_peak-signal_peaks[-2]>min_distance and signal_peaks[-1]-missed_peak>min_distance and detection[missed_peak]>threshold_I2:
-                            missed_section_peaks2.append(missed_peak)
+    for i in range(len(detection)):
 
-                    if len(missed_section_peaks2)>0:           
-                        missed_peak = missed_section_peaks2[np.argmax(detection[missed_section_peaks2])]
-                        missed_peaks.append(missed_peak)
-                        signal_peaks.append(signal_peaks[-1])
-                        signal_peaks[-2] = missed_peak   
-        
-        else:
-            noise_peaks.append(peak)
-            NPKI = 0.125*detection[noise_peaks[-1]] + 0.875*NPKI
-        
-        threshold_I1 = NPKI + 0.25*(SPKI-NPKI)
-        threshold_I2 = 0.5*threshold_I1
+        if i>0 and i<len(detection)-1:
+            if detection[i-1]<detection[i] and detection[i+1]<detection[i]:
+                peak = i
+                peaks.append(i)
 
-        if len(signal_peaks)>8:
-            RR = np.diff(signal_peaks[-9:])
-            RR_ave = int(np.mean(RR))
-            RR_missed = int(1.66*RR_ave)
+                if detection[peak]>threshold_I1 and (peak-signal_peaks[-1])>0.3*fs:
+                        
+                    signal_peaks.append(peak)
+                    indexes.append(index)
+                    SPKI = 0.125*detection[signal_peaks[-1]] + 0.875*SPKI
+                    if RR_missed!=0:
+                        if signal_peaks[-1]-signal_peaks[-2]>RR_missed:
+                            missed_section_peaks = peaks[indexes[-2]+1:indexes[-1]]
+                            missed_section_peaks2 = []
+                            for missed_peak in missed_section_peaks:
+                                if missed_peak-signal_peaks[-2]>min_distance and signal_peaks[-1]-missed_peak>min_distance and detection[missed_peak]>threshold_I2:
+                                    missed_section_peaks2.append(missed_peak)
 
-        index = index+1
+                            if len(missed_section_peaks2)>0:           
+                                missed_peak = missed_section_peaks2[np.argmax(detection[missed_section_peaks2])]
+                                missed_peaks.append(missed_peak)
+                                signal_peaks.append(signal_peaks[-1])
+                                signal_peaks[-2] = missed_peak   
 
+                else:
+                    noise_peaks.append(peak)
+                    NPKI = 0.125*detection[noise_peaks[-1]] + 0.875*NPKI
+
+                threshold_I1 = NPKI + 0.25*(SPKI-NPKI)
+                threshold_I2 = 0.5*threshold_I1
+
+                if len(signal_peaks)>8:
+                    RR = np.diff(signal_peaks[-9:])
+                    RR_ave = int(np.mean(RR))
+                    RR_missed = int(1.66*RR_ave)
+
+                index = index+1      
+    
     signal_peaks.pop(0)
 
     return signal_peaks
