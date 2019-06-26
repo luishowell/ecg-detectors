@@ -31,6 +31,13 @@ class HRV:
 
     
     def _intervals(self, rr_samples):
+        """Calculate the RR intervals in ms from sample numbers.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: RR intervals in milliseconds
+        :rtype: ndarray
+        """
 
         rr_intervals = np.diff(rr_samples*self.period*1000)
 
@@ -38,6 +45,13 @@ class HRV:
 
     
     def _timestamps(self, rr_samples):
+        """Calculate the timestamps in ms from sample locations.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: The timestamps in milliseconds
+        :rtype: array_like
+        """
 
         ts = rr_samples*self.period*1000
 
@@ -45,6 +59,13 @@ class HRV:
 
     
     def _succ_diffs(self, rr_samples):
+        """Calculate the successive differences of R peaks.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: The successive differences of R peaks
+        :rtype: ndarray
+        """
 
         rr_ints = self._intervals(rr_samples)
 
@@ -59,6 +80,15 @@ class HRV:
 
    
     def SDNN(self, rr_samples, normalise=False):
+        """Calculate SDNN, the standard deviation of NN intervals.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :param normalise: normalise the SDNN against the average RR interval, defaults to False
+        :type normalise: bool, optional
+        :return: SDNN, the standard deviation of NN intervals
+        :rtype: float
+        """
 
         rr_intervals = self._intervals(rr_samples) 
         rr_std = np.std(rr_intervals)
@@ -71,6 +101,17 @@ class HRV:
 
     
     def SDANN(self, rr_samples, average_period=5.0, normalise=False):
+        """Calculate SDANN, the standard deviation of the average RR intervals calculated over short periods.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :param average_period: The averging period in minutes, defaults to 5.0
+        :type average_period: float, optional
+        :param normalise: normalise the SDANN against the average RR interval, defaults to False
+        :type normalise: bool, optional
+        :return: SDANN, the standard deviation of the average RR intervals calculated over short periods
+        :rtype: float
+        """
 
         average_period_samples = int(self.fs*average_period*60)
         average_rr_intervals = []
@@ -100,6 +141,15 @@ class HRV:
 
 
     def RMSSD(self, rr_samples, normalise = False):
+        """Calculate RMSSD (root mean square of successive differences).
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :param normalise: normalise the RMSSD against the average RR interval, defaults to False
+        :type normalise: bool, optional
+        :return: RMSSD (root mean square of successive differences)
+        :rtype: float
+        """
 
         succ_diffs = self._succ_diffs(rr_samples)
         succ_diffs = succ_diffs*succ_diffs
@@ -111,7 +161,15 @@ class HRV:
 
         return rms
 
+
     def SDSD(self, rr_samples):
+        """Calculate SDSD (standard deviation of successive differences), the standard deviation of the successive differences between adjacent NNs.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: SDSD (standard deviation of successive differences)
+        :rtype: float
+        """
 
         succ_diffs = self._succ_diffs(rr_samples)
 
@@ -119,6 +177,13 @@ class HRV:
 
     
     def NN50(self, rr_samples):
+        """Calculate NN50, the number of pairs of successive NNs that differ by more than 50 ms.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: NN50
+        :rtype: float
+        """
 
         succ_diffs = self._succ_diffs(rr_samples)
 
@@ -129,11 +194,25 @@ class HRV:
 
 
     def pNN50(self, rr_samples):
+        """Calculate pNN50, the proportion of NN50 divided by total number of NNs.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: pNN50
+        :rtype: float
+        """
 
         return self.NN50(rr_samples)/(len(rr_samples)-1)
 
 
     def NN20(self, rr_samples):
+        """Calculate NN20, the number of pairs of successive NNs that differ by more than 20 ms.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: NN20
+        :rtype: float
+        """
 
         succ_diffs = self._succ_diffs(rr_samples)
 
@@ -144,11 +223,25 @@ class HRV:
 
 
     def pNN20(self, rr_samples):
+        """Calculate pNN20, the proportion of NN20 divided by total number of NNs.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: pNN20
+        :rtype: float
+        """
 
         return self.NN20(rr_samples)/(len(rr_samples)-1)
 
     
     def HR(self, rr_samples):
+        """Calculate heart-rates from R peak samples.
+        
+        :param rr_samples: R peak sample locations
+        :type rr_samples: array_like
+        :return: Heart-rates in BPM
+        :rtype: ndarray
+        """
         
         rr_intervals = np.diff(rr_samples)
         heart_rates = 60.0/(rr_intervals/float(self.fs))
