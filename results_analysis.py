@@ -62,86 +62,118 @@ def f1(results_df, detector_name, experiments=None):
     return f1_val
 
 
-def autolabel(rects):
+def get_result(results_df, calc_function, det_names, experiments=None):
+    
+    result = []
+    for det in det_names:
+        result.append(calc_function(results_df, det, experiments))
+
+    return np.array(result)
+
+
+def single_plot(data, y_label, title = None):
+    fig, ax = plt.subplots()
+    plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
+    x_pos = np.arange(len(plot_names))
+
+    fig.set_size_inches(10, 7)
+    rects1 = ax.bar(x_pos, data, align='center')
+    ax.set_ylabel(y_label)
+    ax.set_xlabel('Detector')
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(plot_names)
+    autolabel(ax, rects1)
+
+    if title!=None:
+        ax.set_title(title)
+
+    plt.tight_layout()
+
+    return rects1
+
+
+def double_plot(data1, data2, y_label, legend1, legend2, title=None):
+    fig, ax = plt.subplots()
+    plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
+    x_pos = np.arange(len(plot_names))
+
+    fig.set_size_inches(10, 7)
+    width = 0.4
+    rects1 = ax.bar(x_pos, data1, width)
+    rects2 = ax.bar(x_pos+width, data2, width)
+    ax.set_ylim(70)
+    ax.set_ylabel(y_label)
+    ax.set_xlabel('Detector')
+    ax.set_xticks(x_pos + width / 2)
+    ax.set_xticklabels(plot_names)
+    ax.legend((rects1[0], rects2[0]), (legend1, legend2))
+    autolabel(ax, rects1)
+    autolabel(ax, rects2)
+
+    if title!=None:
+        ax.set_title(title)
+
+    plt.tight_layout()
+
+    return rects1, rects2
+
+
+def autolabel(ax, rects):
     """
     Attach a text label above each bar displaying its height
     """
+
     for rect in rects:
         height = rect.get_height()
         ax.text(rect.get_x() + rect.get_width()/2.0, 1.005*height,'%.2f' % height,ha='center', va='bottom')
 
 
+# GUDB real time
 gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_00.00.csv', dtype=int, index_col=0)
 gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_23.50.csv', dtype=int, index_col=0)
+
+# GUDB find peaks
+# gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_11.21.csv', dtype=int, index_col=0)
+# gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_15.35.csv', dtype=int, index_col=0)
+
+# MITDB find peaks
 mitdb_results = pd.read_csv('results_MITDB_13.49.csv', dtype=int, index_col=0)
 
 det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
+plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
 experiment_names = ['sitting','maths','walking','hand_bike','jogging']
 output_names = ['TP', 'FP', 'FN', 'TN']
 
 
-mitdb_se = []
-for det in det_names:
-    mitdb_se.append(sensitivity(mitdb_results, det))
-mitdb_ppv = []
-for det in det_names:
-    mitdb_ppv.append(ppv(mitdb_results, det))
-mitdb_f1 = []
-for det in det_names:
-    mitdb_f1.append(f1(mitdb_results, det))
+# calculating results
+mitdb_se = get_result(mitdb_results, sensitivity, det_names)
+mitdb_ppv = get_result(mitdb_results, ppv, det_names)
+mitdb_f1 = get_result(mitdb_results, f1, det_names)
 
-gudb_cs_se = []
-for det in det_names:
-    gudb_cs_se.append(sensitivity(gudb_cs_results, det, experiment_names))
-gudb_cs_ppv = []
-for det in det_names:
-    gudb_cs_ppv.append(ppv(gudb_cs_results, det, experiment_names))
-gudb_cs_f1 = []
-for det in det_names:
-    gudb_cs_f1.append(f1(gudb_cs_results, det, experiment_names))
+gudb_cs_se = get_result(gudb_cs_results, sensitivity, det_names, experiment_names)
+gudb_cs_ppv = get_result(gudb_cs_results, ppv, det_names, experiment_names)
+gudb_cs_f1 = get_result(gudb_cs_results, f1, det_names, experiment_names)
 
-gudb_cable_se = []
-for det in det_names:
-    gudb_cable_se.append(sensitivity(gudb_cable_results, det, experiment_names))
-gudb_cable_ppv = []
-for det in det_names:
-    gudb_cable_ppv.append(ppv(gudb_cable_results, det, experiment_names))
-gudb_cable_f1 = []
-for det in det_names:
-    gudb_cable_f1.append(f1(gudb_cable_results, det, experiment_names))
+gudb_cable_se = get_result(gudb_cable_results, sensitivity, det_names, experiment_names)
+gudb_cable_ppv = get_result(gudb_cable_results, ppv, det_names, experiment_names)
+gudb_cable_f1 = get_result(gudb_cable_results, f1, det_names, experiment_names)
 
+cs_sitting_f1 = get_result(gudb_cs_results, f1, det_names, ['sitting'])
+cs_jogging_f1 = get_result(gudb_cs_results, f1, det_names, ['jogging'])
 
-x_pos = np.arange(len(det_names))
-width = 0.4
+cable_sitting_f1 = get_result(gudb_cable_results, f1, det_names, ['sitting'])
+cable_jogging_f1 = get_result(gudb_cable_results, f1, det_names, ['jogging'])
 
-fig, ax = plt.subplots()
-rects1 = ax.bar(x_pos, mitdb_se, align='center')
-ax.set_ylabel('Sensitivity (%)')
-ax.set_title('Detector Sensitivity on MITDB')
-ax.set_xticks(x_pos)
-ax.set_xticklabels(det_names)
-autolabel(rects1)
+# plotting
+single_plot(mitdb_se, 'Sensitivity (%)', 'MITDB')
+single_plot(mitdb_ppv, 'PPV (%)', 'MITDB')
 
-fig, ax = plt.subplots()
-rects1 = ax.bar(x_pos, mitdb_ppv, align='center')
-ax.set_ylabel('PPV (%)')
-ax.set_title('Detector PPV on MITDB')
-ax.set_xticks(x_pos)
-ax.set_xticklabels(det_names)
-autolabel(rects1)
+double_plot(gudb_cs_se, gudb_cable_se, 'Sensitivity (%)', 'Chest Strap', 'Loose Cables', 'GUDB')
+double_plot(gudb_cs_ppv, gudb_cable_ppv, 'PPV (%)', 'Chest Strap', 'Loose Cables', 'GUDB')
+double_plot(gudb_cs_f1, gudb_cable_f1, 'F1 Score (%)', 'Chest Strap', 'Loose Cables', 'GUDB')
 
-fig, ax = plt.subplots()
-rects1 = ax.bar(x_pos, gudb_cs_f1, width)
-rects2 = ax.bar(x_pos+width, gudb_cable_f1, width)
-ax.set_ylim(70, 100)
-ax.set_ylabel('F1 (%)')
-ax.set_title('Detector F1 on GUDB no find_peaks')
-ax.set_xticks(x_pos + width / 2)
-ax.set_xticklabels(det_names)
-ax.legend((rects1[0], rects2[0]), ('Chest Strap', 'Loose Cables'))
-autolabel(rects1)
-autolabel(rects2)
-
-plt.tight_layout()
+double_plot(cs_sitting_f1, cs_jogging_f1, 'F1 Score (%)', 'Chest Strap Sitting', 'Chest Strap Jogging', 'GUDB')
+double_plot(cable_sitting_f1, cable_jogging_f1, 'F1 Score (%)', 'Loose Cables Sitting', 'Loose Cables Jogging', 'GUDB')
+double_plot(cs_sitting_f1, cable_sitting_f1, 'F1 Score (%)', 'Chest Strap Sitting', 'Loose Cables Sitting', 'GUDB')
 
 plt.show()
