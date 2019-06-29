@@ -112,7 +112,7 @@ avg_maths_rr_sd = np.average(maths_rr_sd)
 sd_maths_rr_sd = np.std(maths_rr_sd)
 
 plt.bar(['sitting','math'],[avg_sitting_rr_sd,avg_maths_rr_sd],yerr=[sd_sitting_rr_sd,sd_maths_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-#plt.ylim([0,100])
+plt.ylim([0,0.1])
 plt.title("WAVELET: Sitting vs Math")
 plt.ylabel('nRMSSD')
 
@@ -136,7 +136,7 @@ sd_maths_true_sd = np.std(maths_true_sd)
 plt.figure()
 
 plt.bar(['sitting','math'],[avg_sitting_error_rr_sd,avg_maths_error_rr_sd],yerr=[sd_sitting_error_rr_sd,sd_maths_error_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-#plt.ylim([0,100])
+plt.ylim([0,0.1])
 plt.title("TWO AVG DETECTOR: Sitting vs Math")
 plt.ylabel('nRMSSD')
 
@@ -146,7 +146,7 @@ print("TWO AVG DETECTOR (sitting vs math): p=",p)
 plt.figure()
 
 plt.bar(['sitting','math'],[avg_sitting_true_sd,avg_maths_true_sd],yerr=[sd_sitting_true_sd,sd_maths_true_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-#plt.ylim([0,100])
+plt.ylim([0,0.1])
 plt.title("GROUND TRUTH: Sitting vs Math")
 plt.ylabel('nRMSSD')
 
