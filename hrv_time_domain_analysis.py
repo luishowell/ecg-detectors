@@ -6,7 +6,7 @@
 # This comparison is then run with
 # - ground truth (hand corrected R time stamps)
 # - Wavelet detector
-# - two averages detector
+# - Pan Tompkins detector
 #
 # Via the commandline argument one can choose
 # Einthoven II or the ECG from the Chest strap
@@ -52,7 +52,7 @@ for i in range(total_subjects):
 
     detectors = Detectors(sitting_class.fs)
 
-    if sitting_class.anno_cs_exists and maths_class.anno_cs_exists:
+    if sitting_class.anno_cs_exists and maths_class.anno_cs_exists and (i != 11):
         subject.append(i)
 
         hrv_class = HRV(sitting_class.fs)
@@ -70,10 +70,10 @@ for i in range(total_subjects):
         r_peaks = detectors.swt_detector(maths_class.cs_V2_V1)
         maths_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
 
-        sitting_error_rr = detectors.two_average_detector(ecg_channel)
+        sitting_error_rr = detectors.pan_tompkins_detector(ecg_channel)
         sitting_error_rr_sd.append(hrv_class.RMSSD(sitting_error_rr,True))
 
-        maths_error_rr = detectors.two_average_detector(maths_class.cs_V2_V1)
+        maths_error_rr = detectors.pan_tompkins_detector(maths_class.cs_V2_V1)
         maths_error_rr_sd.append(hrv_class.RMSSD(maths_error_rr,True))
 
         maths_true_rr = maths_class.anno_cs
@@ -137,11 +137,11 @@ plt.figure()
 
 plt.bar(['sitting','math'],[avg_sitting_error_rr_sd,avg_maths_error_rr_sd],yerr=[sd_sitting_error_rr_sd,sd_maths_error_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
 plt.ylim([0,0.1])
-plt.title("TWO AVG DETECTOR: Sitting vs Math")
+plt.title("Pan Tompkins DETECTOR: Sitting vs Math")
 plt.ylabel('nRMSSD')
 
 t,p = stats.ttest_rel(sitting_error_rr_sd,maths_error_rr_sd)
-print("TWO AVG DETECTOR (sitting vs math): p=",p)
+print("Pan Tompkins DETECTOR: (sitting vs math): p=",p)
 
 plt.figure()
 
