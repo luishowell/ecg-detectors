@@ -84,22 +84,18 @@ for i in range(total_subjects):
 
 
 subject = np.array(subject)
-width = 0.1
+width = 0.4
 
 fig, ax = plt.subplots()
-rects1 = ax.bar(subject, sitting_rr_sd, width)
-rects2 = ax.bar(subject + width, maths_rr_sd, width)
-rects3 = ax.bar(subject+(2*width), sitting_error_rr_sd, width)
-rects4 = ax.bar(subject+(3*width), maths_error_rr_sd, width)
-rects5 = ax.bar(subject+(4*width), sitting_true_sd, width)
-rects6 = ax.bar(subject+(5*width), maths_true_sd, width)
+rects1 = ax.bar(subject+(0*width), sitting_true_sd, width)
+rects2 = ax.bar(subject+(1*width), maths_true_sd, width)
 
 ax.set_ylabel('SDNN (s)')
 ax.set_xlabel('Subject')
 ax.set_title('HRV for sitting and maths test')
 ax.set_xticks(subject + width)
 ax.set_xticklabels(subject)
-ax.legend((rects1[0], rects2[0], rects3[0], rects4[0], rects5[0], rects6[0]), ('sitting (SWT)', 'maths (SWT)', 'sitting (AVG)', 'math (AVG)', 'sitting (TRUE)', 'math(TRUE)' ))
+ax.legend((rects1[0], rects2[0]), ('sitting', 'maths' ))
 
 plt.figure()
 
