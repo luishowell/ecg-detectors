@@ -1,7 +1,7 @@
 # Performs heartrate variation timedomain analysis
 #
 # It calculates the normalised RMSSD during sitting
-# and a math test.
+# and maths.
 #
 # This comparison is then run with
 # - ground truth (hand corrected R time stamps)
@@ -52,7 +52,7 @@ for i in range(total_subjects):
 
     detectors = Detectors(sitting_class.fs)
 
-    if sitting_class.anno_cs_exists and maths_class.anno_cs_exists:
+    if sitting_class.anno_cs_exists and maths_class.anno_cs_exists and (i != 11):
         subject.append(i)
 
         hrv_class = HRV(sitting_class.fs)
@@ -109,13 +109,10 @@ sd_sitting_rr_sd = np.std(sitting_rr_sd)
 avg_maths_rr_sd = np.average(maths_rr_sd)
 sd_maths_rr_sd = np.std(maths_rr_sd)
 
-plt.bar(['sitting','math'],[avg_sitting_rr_sd,avg_maths_rr_sd],yerr=[sd_sitting_rr_sd,sd_maths_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
+plt.bar(['sitting','maths'],[avg_sitting_rr_sd,avg_maths_rr_sd],yerr=[sd_sitting_rr_sd,sd_maths_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
 plt.ylim([0,0.1])
-plt.title("WAVELET: Sitting vs Math")
+plt.title("WAVELET: Sitting vs Maths")
 plt.ylabel('nRMSSD')
-
-t,p = stats.ttest_rel(sitting_rr_sd,maths_rr_sd)
-print("WAVELET (sitting vs math): p=",p)
 
 # and stats with error
 
@@ -133,22 +130,37 @@ sd_maths_true_sd = np.std(maths_true_sd)
 
 plt.figure()
 
-plt.bar(['sitting','math'],[avg_sitting_error_rr_sd,avg_maths_error_rr_sd],yerr=[sd_sitting_error_rr_sd,sd_maths_error_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
+plt.bar(['sitting','maths'],[avg_sitting_error_rr_sd,avg_maths_error_rr_sd],yerr=[sd_sitting_error_rr_sd,sd_maths_error_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
 plt.ylim([0,0.1])
-plt.title("Pan Tompkins DETECTOR: Sitting vs Math")
+plt.title("Pan Tompkins DETECTOR: Sitting vs Maths")
 plt.ylabel('nRMSSD')
-
-t,p = stats.ttest_rel(sitting_error_rr_sd,maths_error_rr_sd)
-print("Pan Tompkins DETECTOR: (sitting vs math): p=",p)
 
 plt.figure()
 
-plt.bar(['sitting','math'],[avg_sitting_true_sd,avg_maths_true_sd],yerr=[sd_sitting_true_sd,sd_maths_true_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
+plt.bar(['sitting','maths'],[avg_sitting_true_sd,avg_maths_true_sd],yerr=[sd_sitting_true_sd,sd_maths_true_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
 plt.ylim([0,0.1])
-plt.title("GROUND TRUTH: Sitting vs Math")
+plt.title("GROUND TRUTH: Sitting vs Maths")
 plt.ylabel('nRMSSD')
 
-t,p = stats.ttest_rel(sitting_true_sd,maths_true_sd)
-print("GROUND TRUTH (sitting vs math): p=",p)
+t,p = stats.ttest_ind(sitting_true_sd,maths_true_sd,equal_var=False)
+print("GROUND TRUTH (sitting vs maths): p=",p)
+
+t,p = stats.ttest_ind(sitting_rr_sd,maths_rr_sd,equal_var=False)
+print("WAVELET (sitting vs maths): p=",p)
+
+t,p = stats.ttest_ind(sitting_error_rr_sd,maths_error_rr_sd,equal_var=False)
+print("Pan Tompkins DETECTOR: (sitting vs maths): p=",p)
+
+t,p = stats.ttest_ind(sitting_true_sd,sitting_rr_sd,equal_var=False)
+print("Sitting: Wavelet vs ground truth, p=",p)
+
+t,p = stats.ttest_ind(sitting_true_sd,sitting_error_rr_sd,equal_var=False)
+print("Sitting: PT vs ground truth, p=",p)
+
+t,p = stats.ttest_ind(maths_true_sd,maths_rr_sd,equal_var=False)
+print("Maths: Wavelet vs ground truth, p=",p)
+
+t,p = stats.ttest_ind(maths_true_sd,maths_error_rr_sd,equal_var=False)
+print("Maths: PT vs ground truth, p=",p)
 
 plt.show()
