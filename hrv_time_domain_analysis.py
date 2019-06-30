@@ -58,22 +58,24 @@ for i in range(total_subjects):
         hrv_class = HRV(sitting_class.fs)
 
         if "e" in sys.argv[1]:
-            ecg_channel = sitting_class.einthoven_II
+            ecg_channel_sitting = sitting_class.einthoven_II
+            ecg_channel_maths = maths_class.einthoven_II
         elif "v" in sys.argv[1]:
-            ecg_channel = sitting_class.cs_V2_V1
+            ecg_channel_sitting = sitting_class.cs_V2_V1
+            ecg_channel_maths = maths_class.cs_V2_V1
         else:
             print("Bad argument. Specify 'e' for Einthoven or 'v' for the Chest strap.")
             exit(1)
 
-        r_peaks = detectors.swt_detector(ecg_channel)
+        r_peaks = detectors.swt_detector(ecg_channel_sitting)
         sitting_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
-        r_peaks = detectors.swt_detector(maths_class.cs_V2_V1)
+        r_peaks = detectors.swt_detector(ecg_channel_maths)
         maths_rr_sd.append(hrv_class.RMSSD(r_peaks,True))
 
-        sitting_error_rr = detectors.pan_tompkins_detector(ecg_channel)
+        sitting_error_rr = detectors.pan_tompkins_detector(ecg_channel_sitting)
         sitting_error_rr_sd.append(hrv_class.RMSSD(sitting_error_rr,True))
 
-        maths_error_rr = detectors.pan_tompkins_detector(maths_class.cs_V2_V1)
+        maths_error_rr = detectors.pan_tompkins_detector(ecg_channel_maths)
         maths_error_rr_sd.append(hrv_class.RMSSD(maths_error_rr,True))
 
         maths_true_rr = maths_class.anno_cs
