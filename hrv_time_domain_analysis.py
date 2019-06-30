@@ -52,7 +52,7 @@ for i in range(total_subjects):
 
     detectors = Detectors(sitting_class.fs)
 
-    if sitting_class.anno_cs_exists and maths_class.anno_cs_exists and (i != 11):
+    if sitting_class.anno_cs_exists and maths_class.anno_cs_exists:
         subject.append(i)
 
         hrv_class = HRV(sitting_class.fs)
