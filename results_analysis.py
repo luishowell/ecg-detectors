@@ -77,7 +77,7 @@ def single_plot(data, y_label, title = None):
     x_pos = np.arange(len(plot_names))
 
     fig.set_size_inches(10, 7)
-    rects1 = ax.bar(x_pos, data, align='center')
+    rects1 = ax.bar(x_pos, data, width = 0.65, align='center')
     ax.set_ylabel(y_label)
     ax.set_xlabel('Detector')
     ax.set_xticks(x_pos)
@@ -128,16 +128,12 @@ def autolabel(ax, rects):
         ax.text(rect.get_x() + rect.get_width()/2.0, 1.005*height,'%.2f' % height,ha='center', va='bottom')
 
 
-# GUDB real time
+# GUDB
 gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_00.00.csv', dtype=int, index_col=0)
 gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_23.50.csv', dtype=int, index_col=0)
 
-# GUDB find peaks
-# gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_11.21.csv', dtype=int, index_col=0)
-# gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_15.35.csv', dtype=int, index_col=0)
-
-# MITDB find peaks
-mitdb_results = pd.read_csv('results_MITDB_13.49.csv', dtype=int, index_col=0)
+# MITDB
+mitdb_results = pd.read_csv('results_MITDB_16.17.csv', dtype=int, index_col=0)
 
 det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
 plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
