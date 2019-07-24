@@ -5,8 +5,8 @@ import pathlib
 from ecgdetectors import Detectors
 
 current_dir = pathlib.Path(__file__).resolve()
-data_dir = str(pathlib.Path(current_dir).parents[1]/'ecg_heartbeatdet'/'experiment_data')
-code_dir = str(pathlib.Path(current_dir).parents[1]/'ecg_heartbeatdet'/'example_code')
+data_dir = str(pathlib.Path(current_dir).parents[1]/'dataset_716'/'experiment_data')
+code_dir = str(pathlib.Path(current_dir).parents[1]/'dataset_716'/'example_code')
 
 import sys
 sys.path.insert(0, code_dir)
