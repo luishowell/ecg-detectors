@@ -18,6 +18,8 @@ class GUDB_test:
     
     def single_classifier_test(self, detector, tolerance=0, config="chest_strap", print_results = True):
 
+        max_delay_in_samples = 250 / 5
+
         total_subjects = Ecg.total_subjects
 
         results = np.zeros((total_subjects, (4*len(Ecg.experiments))+1), dtype=int)
@@ -47,9 +49,11 @@ class GUDB_test:
 
                 if anno_exists:                  
 
-                    r_peaks = detector(unfiltered_ecg)    
+                    r_peaks = detector(unfiltered_ecg)
 
-                    TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
+                    delay = _tester_utils.calcMedianDelay(r_peaks, unfiltered_ecg, max_delay_in_samples)
+
+                    TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, delay, tol=tolerance)
                     TN = len(unfiltered_ecg)-(TP+FP+FN)
 
                     results[subject_number, exp_counter] = TP

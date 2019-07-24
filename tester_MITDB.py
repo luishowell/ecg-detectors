@@ -13,9 +13,9 @@ class MITDB_test:
     def __init__(self, mitdb_dir):
 
         self.mitdb_dir = pathlib.Path(mitdb_dir)
-
     
     def single_classifier_test(self, detector, tolerance=0, print_results = True):
+        max_delay_in_samples = 350 / 5
         dat_files = []
         for file in os.listdir(self.mitdb_dir):
             if file.endswith(".dat"):
@@ -36,9 +36,11 @@ class MITDB_test:
             ann = wfdb.rdann(str(self.mitdb_dir/record), 'atr')    
             anno = _tester_utils.sort_MIT_annotations(ann)    
 
-            r_peaks = detector(unfiltered_ecg)    
+            r_peaks = detector(unfiltered_ecg)
 
-            TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, tol=tolerance)
+            delay = _tester_utils.calcMedianDelay(r_peaks, unfiltered_ecg, max_delay_in_samples)
+
+            TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, delay, tol=tolerance)
             TN = len(unfiltered_ecg)-(TP+FP+FN)
 
             results[i, 0] = int(record)    

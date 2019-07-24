@@ -108,11 +108,7 @@ class Detectors:
 
         QRS.pop(0)
 
-        window = int(0.1*self.fs)
-
-        r_peaks = searchBack(QRS, unfiltered_ecg, window)
-
-        return r_peaks
+        return QRS
 
     
     def christov_detector(self, unfiltered_ecg):
@@ -407,9 +403,7 @@ class Detectors:
 
         squared_peaks = panPeakDetect(squared, self.fs)
   
-        r_peaks = searchBack(squared_peaks, unfiltered_ecg, len(template))
-
-        return r_peaks
+        return squared_peaks
 
     
     def swt_detector(self, unfiltered_ecg):
@@ -448,9 +442,8 @@ class Detectors:
         filtered_squared = signal.lfilter(b, a, squared)       
 
         filt_peaks = panPeakDetect(filtered_squared, self.fs)
-        r_peaks = searchBack(filt_peaks, unfiltered_ecg, int(0.1*self.fs))
-
-        return r_peaks
+        
+        return filt_peaks
 
 
     def pan_tompkins_detector(self, unfiltered_ecg):
@@ -478,9 +471,7 @@ class Detectors:
 
         mwa_peaks = panPeakDetect(mwa, self.fs)
 
-        r_peaks = searchBack(mwa_peaks, unfiltered_ecg, N)
-
-        return r_peaks
+        return mwa_peaks
 
 
     def two_average_detector(self, unfiltered_ecg):
@@ -531,9 +522,7 @@ class Detectors:
                     else:
                         QRS.append(detection)
 
-        r_peaks = searchBack(QRS, unfiltered_ecg, window1)
-
-        return r_peaks
+        return QRS
 
 
 def MWA(input_array, window_size):
@@ -558,22 +547,6 @@ def normalise(input_array):
     output_array = (input_array-np.min(input_array))/(np.max(input_array)-np.min(input_array))
 
     return output_array
-
-
-def searchBack(detected_peaks, unfiltered_ecg, search_samples):
-
-    r_peaks = []
-    window = search_samples
-
-    for i in detected_peaks:
-        if i<window:
-            section = unfiltered_ecg[:i]
-            r_peaks.append(np.argmax(section))
-        else:
-            section = unfiltered_ecg[i-window:i]
-            r_peaks.append(np.argmax(section)+i-window)
-
-    return np.array(r_peaks)
 
 
 def panPeakDetect(detection, fs):    
