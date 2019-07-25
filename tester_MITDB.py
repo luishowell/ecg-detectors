@@ -8,12 +8,15 @@ from ecgdetectors import Detectors
 
 
 class MITDB_test:
- 
+    """
+    Benchmarks detectors with against the MITDB.
+    You need to download both the MIT arrhythmia database from: https://alpha.physionet.org/content/mitdb/1.0.0/
+    and needs to be placed below this directory: "../mit-bih-arrhythmia-database-1.0.0/"
+    """
+    def __init__(self):
+        current_dir = pathlib.Path(__file__).resolve()
+        self.mitdb_dir = str(pathlib.Path(current_dir).parents[1]/'mit-bih-arrhythmia-database-1.0.0')
 
-    def __init__(self, mitdb_dir):
-
-        self.mitdb_dir = pathlib.Path(mitdb_dir)
-    
     def single_classifier_test(self, detector, tolerance=0, print_results = True):
         max_delay_in_samples = 350 / 5
         dat_files = []
@@ -30,10 +33,10 @@ class MITDB_test:
             progress = int(i/float(len(mit_records))*100.0)
             print("Progress: %i%%" % progress)
 
-            sig, fields = wfdb.rdsamp(self.mitdb_dir/record)
+            sig, fields = wfdb.rdsamp(self.mitdb_dir+'/'+record)
             unfiltered_ecg = sig[:, 0]  
 
-            ann = wfdb.rdann(str(self.mitdb_dir/record), 'atr')    
+            ann = wfdb.rdann(str(self.mitdb_dir+'/'+record), 'atr')    
             anno = _tester_utils.sort_MIT_annotations(ann)    
 
             r_peaks = detector(unfiltered_ecg)
@@ -100,7 +103,7 @@ class MITDB_test:
                     col_labels.append(label)
 
         total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
-        total_results_pd.to_csv('results_MITDB'+'_'+_tester_utils.get_time()+'.csv', sep=',')
+        total_results_pd.to_csv('results_MITDB'+'.csv', sep=',')
 
         return total_results_pd
 

@@ -129,11 +129,11 @@ def autolabel(ax, rects):
 
 
 # GUDB
-gudb_cs_results = pd.read_csv('results_GUDB_chest_strap_00.00.csv', dtype=int, index_col=0)
-gudb_cable_results = pd.read_csv('results_GUDB_loose_cables_23.50.csv', dtype=int, index_col=0)
+gudb_cs_results = pd.read_csv('results_GUDB_chest_strap.csv', dtype=int, index_col=0)
+gudb_cable_results = pd.read_csv('results_GUDB_loose_cables.csv', dtype=int, index_col=0)
 
 # MITDB
-mitdb_results = pd.read_csv('results_MITDB_16.17.csv', dtype=int, index_col=0)
+mitdb_results = pd.read_csv('results_MITDB.csv', dtype=int, index_col=0)
 
 det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
 plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']

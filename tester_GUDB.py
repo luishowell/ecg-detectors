@@ -14,7 +14,11 @@ from ecg_gla_database import Ecg
 
 
 class GUDB_test:
- 
+    """
+    This class benchmarks detectors against the GU database.
+    You need to download both the GU database from: http://researchdata.gla.ac.uk/716/
+    and needs to be placed below this directory: "../dataset_716".
+    """
     
     def single_classifier_test(self, detector, tolerance=0, config="chest_strap", print_results = True):
 
@@ -108,7 +112,7 @@ class GUDB_test:
                     col_labels.append(label)
 
         total_results_pd = pd.DataFrame(total_results, index_labels, col_labels, dtype=int)            
-        total_results_pd.to_csv('results_GUDB_'+config+'_'+_tester_utils.get_time()+'.csv', sep=',')
+        total_results_pd.to_csv('results_GUDB_'+config+'.csv', sep=',')
 
         return total_results_pd
 
