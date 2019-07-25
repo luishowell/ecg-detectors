@@ -3,6 +3,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+def mcnemars_test(self, a,b,c,d, print_results = True):
+        table = np.array([[a, b], [c, d]])
+
+        if b==0 or c==0:
+            Z = 0
+        else:
+            Z = (abs(b-c)-1)/np.sqrt(b+c)
+
+        if print_results:
+            print("\n2x2 Table")
+            print(table)
+            print("\nZ score: %.4f\n" % Z)
+        
+        return Z
+
+
 def str_join(a, b, c):
 
     a = np.array(a)
@@ -78,6 +94,7 @@ def single_plot(data, y_label, title = None):
 
     fig.set_size_inches(10, 7)
     rects1 = ax.bar(x_pos, data, width = 0.65, align='center')
+    ax.set_ylim([0,100])
     ax.set_ylabel(y_label)
     ax.set_xlabel('Detector')
     ax.set_xticks(x_pos)
@@ -101,7 +118,7 @@ def double_plot(data1, data2, y_label, legend1, legend2, title=None):
     width = 0.4
     rects1 = ax.bar(x_pos, data1, width)
     rects2 = ax.bar(x_pos+width, data2, width)
-    ax.set_ylim(70)
+    ax.set_ylim([0,100])
     ax.set_ylabel(y_label)
     ax.set_xlabel('Detector')
     ax.set_xticks(x_pos + width / 2)
@@ -146,13 +163,13 @@ mitdb_se = get_result(mitdb_results, sensitivity, det_names)
 mitdb_ppv = get_result(mitdb_results, ppv, det_names)
 mitdb_f1 = get_result(mitdb_results, f1, det_names)
 
-gudb_cs_se = get_result(gudb_cs_results, sensitivity, det_names, experiment_names)
-gudb_cs_ppv = get_result(gudb_cs_results, ppv, det_names, experiment_names)
-gudb_cs_f1 = get_result(gudb_cs_results, f1, det_names, experiment_names)
+gudb_cs_se = get_result(gudb_cs_results, sensitivity, det_names, ['sitting'])
+gudb_cs_ppv = get_result(gudb_cs_results, ppv, det_names, ['sitting'])
+gudb_cs_f1 = get_result(gudb_cs_results, f1, det_names, ['sitting'])
 
-gudb_cable_se = get_result(gudb_cable_results, sensitivity, det_names, experiment_names)
-gudb_cable_ppv = get_result(gudb_cable_results, ppv, det_names, experiment_names)
-gudb_cable_f1 = get_result(gudb_cable_results, f1, det_names, experiment_names)
+gudb_cable_se = get_result(gudb_cable_results, sensitivity, det_names, ['sitting'])
+gudb_cable_ppv = get_result(gudb_cable_results, ppv, det_names, ['sitting'])
+gudb_cable_f1 = get_result(gudb_cable_results, f1, det_names, ['sitting'])
 
 cs_sitting_f1 = get_result(gudb_cs_results, f1, det_names, ['sitting'])
 cs_jogging_f1 = get_result(gudb_cs_results, f1, det_names, ['jogging'])
@@ -163,10 +180,11 @@ cable_jogging_f1 = get_result(gudb_cable_results, f1, det_names, ['jogging'])
 # plotting
 single_plot(mitdb_se, 'Sensitivity (%)', 'MITDB')
 single_plot(mitdb_ppv, 'PPV (%)', 'MITDB')
+single_plot(mitdb_f1, 'F1 (%)', 'MITDB')
 
-double_plot(gudb_cs_se, gudb_cable_se, 'Sensitivity (%)', 'Chest Strap', 'Loose Cables', 'GUDB')
-double_plot(gudb_cs_ppv, gudb_cable_ppv, 'PPV (%)', 'Chest Strap', 'Loose Cables', 'GUDB')
-double_plot(gudb_cs_f1, gudb_cable_f1, 'F1 Score (%)', 'Chest Strap', 'Loose Cables', 'GUDB')
+double_plot(gudb_cs_se, gudb_cable_se, 'Sensitivity (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
+double_plot(gudb_cs_ppv, gudb_cable_ppv, 'PPV (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
+double_plot(gudb_cs_f1, gudb_cable_f1, 'F1 Score (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
 
 double_plot(cs_sitting_f1, cs_jogging_f1, 'F1 Score (%)', 'Chest Strap Sitting', 'Chest Strap Jogging', 'GUDB')
 double_plot(cable_sitting_f1, cable_jogging_f1, 'F1 Score (%)', 'Loose Cables Sitting', 'Loose Cables Jogging', 'GUDB')

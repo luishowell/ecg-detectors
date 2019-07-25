@@ -17,7 +17,7 @@ class MITDB_test:
         current_dir = pathlib.Path(__file__).resolve()
         self.mitdb_dir = str(pathlib.Path(current_dir).parents[1]/'mit-bih-arrhythmia-database-1.0.0')
 
-    def single_classifier_test(self, detector, tolerance=0, print_results = True):
+    def single_classifier_test(self, detector, tolerance=0):
         max_delay_in_samples = 350 / 5
         dat_files = []
         for file in os.listdir(self.mitdb_dir):
@@ -31,7 +31,7 @@ class MITDB_test:
         i = 0
         for record in mit_records:
             progress = int(i/float(len(mit_records))*100.0)
-            print("Progress: %i%%" % progress)
+            print("MITDB progress: %i%%" % progress)
 
             sig, fields = wfdb.rdsamp(self.mitdb_dir+'/'+record)
             unfiltered_ecg = sig[:, 0]  
@@ -43,29 +43,18 @@ class MITDB_test:
 
             delay = _tester_utils.calcMedianDelay(r_peaks, unfiltered_ecg, max_delay_in_samples)
 
-            TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, delay, tol=tolerance)
-            TN = len(unfiltered_ecg)-(TP+FP+FN)
+            if delay > 1:
 
-            results[i, 0] = int(record)    
-            results[i, 1] = TP
-            results[i, 2] = FP
-            results[i, 3] = FN
-            results[i, 4] = TN
+                TP, FP, FN = _tester_utils.evaluate_detector(r_peaks, anno, delay, tol=tolerance)
+                TN = len(unfiltered_ecg)-(TP+FP+FN)
+                
+                results[i, 0] = int(record)    
+                results[i, 1] = TP
+                results[i, 2] = FP
+                results[i, 3] = FN
+                results[i, 4] = TN
 
             i = i+1
-
-        if print_results:
-            total_tp = np.sum(results[:, 1])
-            total_fp = np.sum(results[:, 2])
-            total_fn = np.sum(results[:, 3])            
-            
-            se = total_tp/(total_tp+total_fn)*100.0
-            ppv = total_tp/(total_tp+total_fp)*100.0
-            f1 = (2*total_tp)/((2*total_tp)+total_fp+total_fn)*100.0
-            
-            print("\nSensitivity: %.2f%%" % se)
-            print("PPV: %.2f%%" % ppv)
-            print("F1 Score: %.2f%%\n" % f1)
         
         return results
 
@@ -87,7 +76,7 @@ class MITDB_test:
 
             print('\n'+det_name)
 
-            result = self.single_classifier_test(_tester_utils.det_from_name(det_name, 360), tolerance=tolerance, print_results=False)
+            result = self.single_classifier_test(_tester_utils.det_from_name(det_name, 360), tolerance=tolerance)
             index_labels = result[:, 0]
             result = result[:, 1:]
 
@@ -106,59 +95,3 @@ class MITDB_test:
         total_results_pd.to_csv('results_MITDB'+'.csv', sep=',')
 
         return total_results_pd
-
-
-    def mcnemars_test(self, detector1, detector2, tolerance=0, print_results = True):
-        dat_files = []
-        for file in os.listdir(self.mitdb_dir):
-            if file.endswith(".dat"):
-                dat_files.append(file)
-        
-        mit_records = [w.replace(".dat", "") for w in dat_files]
-
-        a = 0 #neg/neg
-        b = 0 #pos/neg
-        c = 0 #neg/pos
-        d = 0 #pos/pos
-        i = 0
-        for record in mit_records:
-            progress = int(i/float(len(mit_records))*100)
-            print("Progress: %i%%" % progress)
-  
-            sig, fields = wfdb.rdsamp(self.mitdb_dir/record)
-            unfiltered_ecg = sig[:, 0]  
-
-            ann = wfdb.rdann(str(self.mitdb_dir/record), 'atr')    
-            anno = _tester_utils.sort_MIT_annotations(ann)    
-
-            r_peaks1 = detector1(unfiltered_ecg)    
-            r_peaks2 = detector2(unfiltered_ecg)
-
-            for sample in anno:
-                result1 = np.any(np.in1d(sample, r_peaks1))
-                result2 = np.any(np.in1d(sample, r_peaks2))              
-
-                if result1 and result2:
-                    d+=1
-                elif result1 and not result2:
-                    b+=1
-                elif not result1 and result2:
-                    c+=1
-                elif not result1 and not result2:
-                    a+=1
-            
-            i+=1
-
-        table = np.array([[a, b], [c, d]])
-
-        if b==0 or c==0:
-            Z = 0
-        else:
-            Z = (abs(b-c)-1)/np.sqrt(b+c)
-
-        if print_results:
-            print("\n2x2 Table")
-            print(table)
-            print("\nZ score: %.4f\n" % Z)
-        
-        return Z

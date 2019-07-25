@@ -237,21 +237,8 @@ class Detectors:
                     Rm = int(np.mean(RR))
 
         QRS.pop(0)
-        r_peaks = []
-        search_samples = int(0.05*self.fs)
-
-        for i in QRS:
-            if i < search_samples:
-                section = unfiltered_ecg[0:search_samples]
-                r_peaks.append(np.argmax(section))
-            elif i+search_samples>len(unfiltered_ecg):
-                section = unfiltered_ecg[i:]
-                r_peaks.append(np.argmax(section)+i)
-            else:
-                section = unfiltered_ecg[i-search_samples:i+search_samples]
-                r_peaks.append(np.argmax(section)+(i-search_samples))
-
-        return r_peaks
+        
+        return QRS
 
     
     def engzee_detector(self, unfiltered_ecg):
@@ -361,14 +348,7 @@ class Detectors:
                     thi = False
                     thf = False                                        
             
-            if counter>neg_threshold:
-                unfiltered_section = unfiltered_ecg[thi_list[-1]-int(0.01*self.fs):i]
-                r_peaks.append(np.argmax(unfiltered_section)+thi_list[-1]-int(0.01*self.fs))
-                counter = 0
-                thi = False
-                thf = False
-
-        return r_peaks
+        return thi_list
 
     
     def matched_filter_detector(self, unfiltered_ecg):

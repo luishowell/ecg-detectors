@@ -11,38 +11,46 @@ import pathlib
 from tester_MITDB import MITDB_test
 from tester_GUDB import GUDB_test
 from ecgdetectors import Detectors
+from multiprocessing import Process
 
 # benchmark the detectors with the MIT DB
 do_test_MIT = True
 
-# benchmark the detectors with the MIT DB
+# benchmark the detectors with the GU DB
 do_test_GU  = True
 
 def run_GUDB_tests(leads):
     # GUDB database testing
     gu_test = GUDB_test()
     gu_detectors = Detectors(250)
-    
-    swt_gudb = gu_test.single_classifier_test(gu_detectors.swt_detector, tolerance=0, config=leads)    
-    gu_results = gu_test.classifer_test_all(tolerance=0, config=leads)
-    Z_value_gu = gu_test.mcnemars_test(gu_detectors.swt_detector, gu_detectors.two_average_detector, print_results = True)
+    gu_test.classifer_test_all(tolerance=0, config=leads)
 
-
-if do_test_MIT:
+def run_MIT_tests():
     # MIT-BIH database testing
     mit_test = MITDB_test()
     mit_detectors = Detectors(360)
     
     # test single detector
-    matched_filter_mit = mit_test.single_classifier_test(mit_detectors.matched_filter_detector, tolerance=0, print_results=True)
+    matched_filter_mit = mit_test.single_classifier_test(mit_detectors.matched_filter_detector, tolerance=0)
     np.savetxt('matched_filter_mit.csv', matched_filter_mit, fmt='%i', delimiter=',')
 
     # test all detectors on MITDB, will save results to csv, will take some time
-    mit_results = mit_test.classifer_test_all()
+    mit_test.classifer_test_all()
 
-    # McNemars stats test
-    Z_value_mit = mit_test.mcnemars_test(mit_detectors.swt_detector, mit_detectors.two_average_detector, print_results = True)
+
+if do_test_MIT:
+    pmit = Process(target=run_MIT_tests)
+    pmit.start()
 
 if do_test_GU:
-    run_GUDB_tests('chest_strap')
-    run_GUDB_tests('loose_cables')
+    pgustrap = Process(target=run_GUDB_tests, args=('chest_strap',))
+    pgustrap.start()
+    pgucables = Process(target=run_GUDB_tests, args=('loose_cables',))
+    pgucables.start()
+
+if do_test_MIT:
+    pmit.join()
+
+if do_test_GU:
+    pgustrap.join()
+    pgucables.join()
