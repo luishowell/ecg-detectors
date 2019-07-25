@@ -22,8 +22,8 @@ def get_sensivities(results_df, detector_name, experiment=None):
         fp_col_names = str_join(detector_name+' ', [experiment], ' FP')
         fn_col_names = str_join(detector_name+' ', [experiment], ' FN')
         tn_col_names = str_join(detector_name+' ', [experiment], ' TN')
-        total_tp = results_df.loc[:, tp_col_names].values
-        total_fn = results_df.loc[:, fn_col_names].values
+        total_tp = (results_df.loc[:, tp_col_names].values)[:,0]
+        total_fn = (results_df.loc[:, fn_col_names].values)[:,0]
     else:
         tp_col_names = detector_name+' '+'TP'
         fp_col_names = detector_name+' '+'FP'
@@ -63,6 +63,8 @@ def compare_det_test(results_df, detector_name1, detector_name2, experiment=None
     if len(se2) < 2:
             return 0
     l = min(len(se1),len(se2))
+    #print("1:",se1[:l])
+    #print("2:",se2[:l])
     try:
         t,p = stats.wilcoxon(se1[:l],se2[:l])
         return p
@@ -166,8 +168,11 @@ for det1 in det_names:
 
 # calculating results
 mitdb_avg,mitdb_std = get_result(mitdb_results, det_names)
+print("mitdb:",mitdb_avg)
 gudb_cs_sitting_avg,gudb_cs_sitting_std = get_result(gudb_cs_results, det_names, 'sitting')
+print("chest strap sitting:",gudb_cs_sitting_avg)
 gudb_cable_sitting_avg,gudb_cable_sitting_std = get_result(gudb_cable_results, det_names, 'sitting')
+print("lose cables sitting:",gudb_cable_sitting_avg)
 gudb_cs_jogging_avg,gudb_cs_jogging_std = get_result(gudb_cs_results, det_names, 'jogging')
 gudb_cable_jogging_avg,gudb_cable_jogging_std = get_result(gudb_cable_results, det_names, 'jogging')
 
