@@ -2,23 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-
-def mcnemars_test(self, a,b,c,d, print_results = True):
-        table = np.array([[a, b], [c, d]])
-
-        if b==0 or c==0:
-            Z = 0
-        else:
-            Z = (abs(b-c)-1)/np.sqrt(b+c)
-
-        if print_results:
-            print("\n2x2 Table")
-            print(table)
-            print("\nZ score: %.4f\n" % Z)
-        
-        return Z
-
+import scipy.stats as stats
 
 def str_join(a, b, c):
 
@@ -31,76 +15,73 @@ def str_join(a, b, c):
     return str_array
 
 
-def summed_results(results_df, detector_name, experiments=None):
+def get_sensivities(results_df, detector_name, experiment=None):
 
-    if experiments!=None:
-        tp_col_names = str_join(detector_name+' ', experiments, ' TP')
-        fp_col_names = str_join(detector_name+' ', experiments, ' FP')
-        fn_col_names = str_join(detector_name+' ', experiments, ' FN')
-        tn_col_names = str_join(detector_name+' ', experiments, ' TN')
+    if experiment!=None:
+        tp_col_names = str_join(detector_name+' ', [experiment], ' TP')
+        fp_col_names = str_join(detector_name+' ', [experiment], ' FP')
+        fn_col_names = str_join(detector_name+' ', [experiment], ' FN')
+        tn_col_names = str_join(detector_name+' ', [experiment], ' TN')
+        total_tp = results_df.loc[:, tp_col_names].values
+        total_fn = results_df.loc[:, fn_col_names].values
     else:
         tp_col_names = detector_name+' '+'TP'
         fp_col_names = detector_name+' '+'FP'
         fn_col_names = detector_name+' '+'FN'
         tn_col_names = detector_name+' '+'TN'      
+        total_tp = results_df.loc[:, tp_col_names].values
+        total_fn = results_df.loc[:, fn_col_names].values
 
-    total_tp = np.sum(results_df.loc[:, tp_col_names].values)
-    total_fp = np.sum(results_df.loc[:, fp_col_names].values)
-    total_fn = np.sum(results_df.loc[:, fn_col_names].values)
-    total_tn = np.sum(results_df.loc[:, tn_col_names].values)
+    se = []
 
-    return total_tp, total_fp, total_fn, total_tn
+    for tp,fn in zip(total_tp,total_fn):
+            if (tp + fn) > 0:
+                s = tp/(tp+fn)*100.0
+                if s > 0:
+                        se.append(s)
 
-
-def sensitivity(results_df, detector_name, experiments=None):
-
-    total_tp, total_fp, total_fn, total_tn = summed_results(results_df, detector_name, experiments)
-
-    se = total_tp/(total_tp+total_fn)*100.0
-
-    return se
+    return np.array(se)
 
 
-def ppv(results_df, detector_name, experiments=None):
-
-    total_tp, total_fp, total_fn, total_tn = summed_results(results_df, detector_name, experiments)
-
-    ppv_val = total_tp/(total_tp+total_fp)*100.0
-
-    return ppv_val
-
-
-def f1(results_df, detector_name, experiments=None):
-
-    total_tp, total_fp, total_fn, total_tn = summed_results(results_df, detector_name, experiments)
-
-    f1_val = (2*total_tp)/((2*total_tp)+total_fp+total_fn)*100.0
-
-    return f1_val
-
-
-def get_result(results_df, calc_function, det_names, experiments=None):
+def get_result(results_df, det_names, experiment=None):
     
-    result = []
+    m = []
+    s = []
     for det in det_names:
-        result.append(calc_function(results_df, det, experiments))
+        m.append(np.mean(get_sensivities(results_df, det, experiment)))
+        s.append(np.std(get_sensivities(results_df, det, experiment)))
 
-    return np.array(result)
+    return np.array(m),np.array(s)
 
 
-def single_plot(data, y_label, title = None):
+
+def compare_det_test(results_df, detector_name1, detector_name2, experiment=None):
+    se1 = get_sensivities(results_df, detector_name1, experiment)
+    if len(se1) < 2:
+            return 0
+    se2 = get_sensivities(results_df, detector_name2, experiment)
+    if len(se2) < 2:
+            return 0
+    l = min(len(se1),len(se2))
+    try:
+        t,p = stats.wilcoxon(se1[:l],se2[:l])
+        return p
+    except:
+        return 1.0
+
+
+def single_plot(data, std, y_label, title = None):
     fig, ax = plt.subplots()
     plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
     x_pos = np.arange(len(plot_names))
 
     fig.set_size_inches(10, 7)
-    rects1 = ax.bar(x_pos, data, width = 0.65, align='center')
+    rects1 = ax.bar(x_pos, data, yerr=std, width = 0.65, align='center', alpha=0.5, ecolor='black', capsize=10)
     ax.set_ylim([0,100])
     ax.set_ylabel(y_label)
     ax.set_xlabel('Detector')
     ax.set_xticks(x_pos)
     ax.set_xticklabels(plot_names)
-    autolabel(ax, rects1)
 
     if title!=None:
         ax.set_title(title)
@@ -110,23 +91,21 @@ def single_plot(data, y_label, title = None):
     return rects1
 
 
-def double_plot(data1, data2, y_label, legend1, legend2, title=None):
+def double_plot(data1, std1, data2, std2, y_label, legend1, legend2, title=None):
     fig, ax = plt.subplots()
     plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
     x_pos = np.arange(len(plot_names))
 
     fig.set_size_inches(10, 7)
     width = 0.4
-    rects1 = ax.bar(x_pos, data1, width)
-    rects2 = ax.bar(x_pos+width, data2, width)
+    rects1 = ax.bar(x_pos, data1, width, yerr=std1, alpha=0.5, ecolor='black', capsize=10)
+    rects2 = ax.bar(x_pos+width, data2, width, yerr=std2, alpha=0.5, ecolor='black', capsize=10)
     ax.set_ylim([0,100])
     ax.set_ylabel(y_label)
     ax.set_xlabel('Detector')
     ax.set_xticks(x_pos + width / 2)
     ax.set_xticklabels(plot_names)
     ax.legend((rects1[0], rects2[0]), (legend1, legend2))
-    autolabel(ax, rects1)
-    autolabel(ax, rects2)
 
     if title!=None:
         ax.set_title(title)
@@ -136,14 +115,11 @@ def double_plot(data1, data2, y_label, legend1, legend2, title=None):
     return rects1, rects2
 
 
-def autolabel(ax, rects):
-    """
-    Attach a text label above each bar displaying its height
-    """
-
-    for rect in rects:
-        height = rect.get_height()
-        ax.text(rect.get_x() + rect.get_width()/2.0, 1.005*height,'%.2f' % height,ha='center', va='bottom')
+def print_stat(txt,det1,det2,p):
+    s = ""
+    if p < 0.05:
+        s = "*"
+    print(txt,det1,det2,p,s)
 
 
 # GUDB
@@ -158,37 +134,54 @@ plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mo
 experiment_names = ['sitting','maths','walking','hand_bike','jogging']
 output_names = ['TP', 'FP', 'FN', 'TN']
 
+for det1 in det_names:
+    for det2 in det_names:
+        p = compare_det_test(mitdb_results, det1, det2)
+        print_stat("mit:",det1,det2,p)
+
+
+for det1 in det_names:
+    for det2 in det_names:
+        p = compare_det_test(gudb_cs_results, det1, det2, 'sitting')
+        print_stat("chest strap sitting:",det1,det2,p)
+
+
+for det1 in det_names:
+    for det2 in det_names:
+        p = compare_det_test(gudb_cs_results, det1, det2, 'jogging')
+        print_stat("chest strap jogging:",det1,det2,p)
+
+
+for det1 in det_names:
+    for det2 in det_names:
+        p = compare_det_test(gudb_cable_results, det1, det2, 'sitting')
+        print_stat("loose cable sitting:",det1,det2,p)
+
+
+for det1 in det_names:
+    for det2 in det_names:
+        p = compare_det_test(gudb_cable_results, det1, det2, 'jogging')
+        print_stat("loose cable jogging:",det1,det2,p)
+
 
 # calculating results
-mitdb_se = get_result(mitdb_results, sensitivity, det_names)
-mitdb_ppv = get_result(mitdb_results, ppv, det_names)
-mitdb_f1 = get_result(mitdb_results, f1, det_names)
-
-gudb_cs_se = get_result(gudb_cs_results, sensitivity, det_names, ['sitting'])
-gudb_cs_ppv = get_result(gudb_cs_results, ppv, det_names, ['sitting'])
-gudb_cs_f1 = get_result(gudb_cs_results, f1, det_names, ['sitting'])
-
-gudb_cable_se = get_result(gudb_cable_results, sensitivity, det_names, ['sitting'])
-gudb_cable_ppv = get_result(gudb_cable_results, ppv, det_names, ['sitting'])
-gudb_cable_f1 = get_result(gudb_cable_results, f1, det_names, ['sitting'])
-
-cs_sitting_f1 = get_result(gudb_cs_results, f1, det_names, ['sitting'])
-cs_jogging_f1 = get_result(gudb_cs_results, f1, det_names, ['jogging'])
-
-cable_sitting_f1 = get_result(gudb_cable_results, f1, det_names, ['sitting'])
-cable_jogging_f1 = get_result(gudb_cable_results, f1, det_names, ['jogging'])
+mitdb_avg,mitdb_std = get_result(mitdb_results, det_names)
+gudb_cs_sitting_avg,gudb_cs_sitting_std = get_result(gudb_cs_results, det_names, 'sitting')
+gudb_cable_sitting_avg,gudb_cable_sitting_std = get_result(gudb_cable_results, det_names, 'sitting')
+gudb_cs_jogging_avg,gudb_cs_jogging_std = get_result(gudb_cs_results, det_names, 'jogging')
+gudb_cable_jogging_avg,gudb_cable_jogging_std = get_result(gudb_cable_results, det_names, 'jogging')
 
 # plotting
-single_plot(mitdb_se, 'Sensitivity (%)', 'MITDB')
-single_plot(mitdb_ppv, 'PPV (%)', 'MITDB')
-single_plot(mitdb_f1, 'F1 (%)', 'MITDB')
+single_plot(mitdb_avg, mitdb_std, 'Sensitivity (%)', 'MITDB')
 
-double_plot(gudb_cs_se, gudb_cable_se, 'Sensitivity (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
-double_plot(gudb_cs_ppv, gudb_cable_ppv, 'PPV (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
-double_plot(gudb_cs_f1, gudb_cable_f1, 'F1 Score (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
+double_plot(gudb_cs_sitting_avg, gudb_cs_sitting_std,
+            gudb_cable_sitting_avg, gudb_cable_sitting_std,
+            'Sensitivity (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, sitting')
 
-double_plot(cs_sitting_f1, cs_jogging_f1, 'F1 Score (%)', 'Chest Strap Sitting', 'Chest Strap Jogging', 'GUDB')
-double_plot(cable_sitting_f1, cable_jogging_f1, 'F1 Score (%)', 'Loose Cables Sitting', 'Loose Cables Jogging', 'GUDB')
-double_plot(cs_sitting_f1, cable_sitting_f1, 'F1 Score (%)', 'Chest Strap Sitting', 'Loose Cables Sitting', 'GUDB')
+double_plot(gudb_cs_jogging_avg, gudb_cs_jogging_std,
+            gudb_cable_jogging_avg, gudb_cable_jogging_std,
+            'Sensitivity (%)', 'Chest Strap', 'Loose Cables', 'GUDB: cable, jogging')
+
+
 
 plt.show()

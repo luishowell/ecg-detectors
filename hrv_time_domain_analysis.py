@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # Performs heartrate variation timedomain analysis
 #
 # It calculates the normalised RMSSD during sitting
@@ -110,7 +111,7 @@ avg_maths_rr_sd = np.average(maths_rr_sd)
 sd_maths_rr_sd = np.std(maths_rr_sd)
 
 plt.bar(['sitting','maths'],[avg_sitting_rr_sd,avg_maths_rr_sd],yerr=[sd_sitting_rr_sd,sd_maths_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-plt.ylim([0,0.1])
+plt.ylim([0,0.15])
 plt.title("WAVELET: Sitting vs Maths")
 plt.ylabel('nRMSSD')
 
@@ -131,14 +132,14 @@ sd_maths_true_sd = np.std(maths_true_sd)
 plt.figure()
 
 plt.bar(['sitting','maths'],[avg_sitting_error_rr_sd,avg_maths_error_rr_sd],yerr=[sd_sitting_error_rr_sd,sd_maths_error_rr_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-plt.ylim([0,0.1])
+plt.ylim([0,0.15])
 plt.title("Pan Tompkins DETECTOR: Sitting vs Maths")
 plt.ylabel('nRMSSD')
 
 plt.figure()
 
 plt.bar(['sitting','maths'],[avg_sitting_true_sd,avg_maths_true_sd],yerr=[sd_sitting_true_sd,sd_maths_true_sd],align='center', alpha=0.5, ecolor='black', capsize=10)
-plt.ylim([0,0.1])
+plt.ylim([0,0.15])
 plt.title("GROUND TRUTH: Sitting vs Maths")
 plt.ylabel('nRMSSD')
 
