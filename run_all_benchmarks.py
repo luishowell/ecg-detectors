@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 This script benchmarks all detectors with both the MIT database and the GU database.
 For the GU database it runs it for both the chest strap and Einthoven II with loose cables.
