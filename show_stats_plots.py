@@ -69,7 +69,7 @@ def compare_det_test(results_df, detector_name1, detector_name2, experiment=None
         t,p = stats.wilcoxon(se1[:l],se2[:l])
         return p
     except:
-        return 1.0
+        return None
 
 
 def single_plot(data, std, y_label, title = None):
@@ -117,11 +117,14 @@ def double_plot(data1, std1, data2, std2, y_label, legend1, legend2, title=None)
     return rects1, rects2
 
 
-def print_stat(txt,det1,det2,p):
+def print_stat(p):
+    if p == None:
+        print('--- & ',end='')
+        return
     s = ""
     if p < 0.05:
         s = "*"
-    print(txt,det1,det2,p,s)
+    print('{:03.2f}{} & '.format(p,s),end='')
 
 
 # GUDB
@@ -136,34 +139,44 @@ plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mo
 experiment_names = ['sitting','maths','walking','hand_bike','jogging']
 output_names = ['TP', 'FP', 'FN', 'TN']
 
+print("MIT")
 for det1 in det_names:
     for det2 in det_names:
         p = compare_det_test(mitdb_results, det1, det2)
-        print_stat("mit:",det1,det2,p)
+        print_stat(p)
+    print("\\\\")
 
 
+print("CHEST STRAP SITTING")
 for det1 in det_names:
     for det2 in det_names:
         p = compare_det_test(gudb_cs_results, det1, det2, 'sitting')
-        print_stat("chest strap sitting:",det1,det2,p)
+        print_stat(p)
+    print("\\\\")
 
 
+print("CHEST STRAP JOGGING")
 for det1 in det_names:
     for det2 in det_names:
         p = compare_det_test(gudb_cs_results, det1, det2, 'jogging')
-        print_stat("chest strap jogging:",det1,det2,p)
+        print_stat(p)
+    print("\\\\")
 
-
+    
+print("LOOSE CABLE SITTING")
 for det1 in det_names:
     for det2 in det_names:
         p = compare_det_test(gudb_cable_results, det1, det2, 'sitting')
-        print_stat("loose cable sitting:",det1,det2,p)
+        print_stat(p)
+    print("\\\\")
 
 
+print("LOOSE CABLE JOGGING")
 for det1 in det_names:
     for det2 in det_names:
         p = compare_det_test(gudb_cable_results, det1, det2, 'jogging')
-        print_stat("loose cable jogging:",det1,det2,p)
+        print_stat(p)
+    print("\\\\")
 
 
 # calculating results
