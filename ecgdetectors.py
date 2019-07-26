@@ -348,7 +348,14 @@ class Detectors:
                     thi = False
                     thf = False                                        
             
-        return thi_list
+            if counter>neg_threshold:
+                unfiltered_section = unfiltered_ecg[thi_list[-1]-int(0.01*self.fs):i]
+                r_peaks.append(np.argmax(unfiltered_section)+thi_list[-1]-int(0.01*self.fs))
+                counter = 0
+                thi = False
+                thf = False
+
+        return r_peaks
 
     
     def matched_filter_detector(self, unfiltered_ecg):
