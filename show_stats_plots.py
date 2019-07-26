@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.stats as stats
+import _tester_utils
 
 def str_join(a, b, c):
 
@@ -65,6 +66,35 @@ def compare_det_test(results_df, detector_name1, detector_name2, experiment=None
     l = min(len(se1),len(se2))
     #print("1:",se1[:l])
     #print("2:",se2[:l])
+    try:
+        t,p = stats.wilcoxon(se1[:l],se2[:l])
+        return p
+    except:
+        return None
+
+def compare_cables(results_df1,results_df2,det1,experiment):
+    se1 = get_sensivities(results_df1, det1, experiment)
+    if len(se1) < 2:
+        return 0
+    se2 = get_sensivities(results_df2, det1, experiment)
+    if len(se2) < 2:
+        return 0
+    l = min(len(se1),len(se2))
+    try:
+        t,p = stats.wilcoxon(se1[:l],se2[:l])
+        return p
+    except:
+        return None
+
+
+def compare_experiments(results_df1,det1):
+    se1 = get_sensivities(results_df1, det1, 'sitting')
+    if len(se1) < 2:
+        return 0
+    se2 = get_sensivities(results_df1, det1, 'jogging')
+    if len(se2) < 2:
+        return 0
+    l = min(len(se1),len(se2))
     try:
         t,p = stats.wilcoxon(se1[:l],se2[:l])
         return p
@@ -134,60 +164,85 @@ gudb_cable_results = pd.read_csv('results_GUDB_loose_cables.csv', dtype=int, ind
 # MITDB
 mitdb_results = pd.read_csv('results_MITDB.csv', dtype=int, index_col=0)
 
-det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
 plot_names = ['Elgendi et al', 'Matched Filter', 'Kalidas and Tamil', 'Engzee Mod', 'Christov', 'Hamilton', 'Pan and Tompkins']
 experiment_names = ['sitting','maths','walking','hand_bike','jogging']
 output_names = ['TP', 'FP', 'FN', 'TN']
 
 print("MIT")
-for det1 in det_names:
-    for det2 in det_names:
+for det1 in _tester_utils.det_names:
+    for det2 in _tester_utils.det_names:
         p = compare_det_test(mitdb_results, det1, det2)
         print_stat(p)
     print("\\\\")
 
 
 print("CHEST STRAP SITTING")
-for det1 in det_names:
-    for det2 in det_names:
+for det1 in _tester_utils.det_names:
+    for det2 in _tester_utils.det_names:
         p = compare_det_test(gudb_cs_results, det1, det2, 'sitting')
         print_stat(p)
     print("\\\\")
 
 
 print("CHEST STRAP JOGGING")
-for det1 in det_names:
-    for det2 in det_names:
+for det1 in _tester_utils.det_names:
+    for det2 in _tester_utils.det_names:
         p = compare_det_test(gudb_cs_results, det1, det2, 'jogging')
         print_stat(p)
     print("\\\\")
 
     
 print("LOOSE CABLE SITTING")
-for det1 in det_names:
-    for det2 in det_names:
+for det1 in _tester_utils.det_names:
+    for det2 in _tester_utils.det_names:
         p = compare_det_test(gudb_cable_results, det1, det2, 'sitting')
         print_stat(p)
     print("\\\\")
 
 
 print("LOOSE CABLE JOGGING")
-for det1 in det_names:
-    for det2 in det_names:
+for det1 in _tester_utils.det_names:
+    for det2 in _tester_utils.det_names:
         p = compare_det_test(gudb_cable_results, det1, det2, 'jogging')
         print_stat(p)
     print("\\\\")
 
+print("CHEST STRAP VS EINTH")
+for exp1 in ['sitting','jogging']:
+    print(exp1,":")
+    for det1 in _tester_utils.det_names:
+        p = compare_cables(gudb_cable_results,gudb_cs_results,det1,exp1)
+        print_stat(p)
+    print("\\\\")
+
+
+print("LOOSE CABLES: SITTING VS JOGGING")
+for det1 in _tester_utils.det_names:
+    p = compare_experiments(gudb_cable_results,det1)
+    print_stat(p)
+print("\\\\")
+
+
+print("CHEST STRAP: SITTING VS JOGGING")
+for det1 in _tester_utils.det_names:
+    p = compare_experiments(gudb_cs_results,det1)
+    print_stat(p)
+print("\\\\")
+
 
 # calculating results
-mitdb_avg,mitdb_std = get_result(mitdb_results, det_names)
+mitdb_avg,mitdb_std = get_result(mitdb_results, _tester_utils.det_names)
 print("mitdb:",mitdb_avg)
-gudb_cs_sitting_avg,gudb_cs_sitting_std = get_result(gudb_cs_results, det_names, 'sitting')
+gudb_cs_sitting_avg,gudb_cs_sitting_std = get_result(gudb_cs_results,
+                                                     _tester_utils.det_names, 'sitting')
 print("chest strap sitting:",gudb_cs_sitting_avg)
-gudb_cable_sitting_avg,gudb_cable_sitting_std = get_result(gudb_cable_results, det_names, 'sitting')
+gudb_cable_sitting_avg,gudb_cable_sitting_std = get_result(gudb_cable_results,
+                                                           _tester_utils.det_names, 'sitting')
 print("lose cables sitting:",gudb_cable_sitting_avg)
-gudb_cs_jogging_avg,gudb_cs_jogging_std = get_result(gudb_cs_results, det_names, 'jogging')
-gudb_cable_jogging_avg,gudb_cable_jogging_std = get_result(gudb_cable_results, det_names, 'jogging')
+gudb_cs_jogging_avg,gudb_cs_jogging_std = get_result(gudb_cs_results,
+                                                     _tester_utils.det_names, 'jogging')
+gudb_cable_jogging_avg,gudb_cable_jogging_std = get_result(gudb_cable_results,
+                                                           _tester_utils.det_names, 'jogging')
 
 # plotting
 single_plot(mitdb_avg, mitdb_std, 'Sensitivity (%)', 'MITDB')

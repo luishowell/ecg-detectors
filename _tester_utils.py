@@ -2,6 +2,7 @@ import numpy as np
 from ecgdetectors import Detectors
 from datetime import datetime
 
+det_names = ['two_average', 'matched_filter', 'swt', 'engzee', 'christov', 'hamilton', 'pan_tompkins']
 
 def sort_MIT_annotations(ann):
     beat_labels = ['N', 'L', 'R', 'B', 'A', 'a', 'J', 'S', 'V', 'r', 'F', 'e', 'j', 'n', 'E', '/', 'f', 'Q', '?']
@@ -60,6 +61,7 @@ def evaluate_detector(test, annotation, delay, tol=0):
 def det_from_name(detector_name, fs):
 
         detectors = Detectors(fs)
+        detectors.engzee_fake_delay = 10
 
         if detector_name=='two_average':
                 return detectors.two_average_detector

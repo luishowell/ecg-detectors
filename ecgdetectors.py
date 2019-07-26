@@ -27,7 +27,8 @@ class Detectors:
         """
 
         self.fs = sampling_frequency
-
+        # this is set to a positive value for benchmarking
+        self.engzee_fake_delay = 0
 
     def hamilton_detector(self, unfiltered_ecg):
         """
@@ -350,7 +351,7 @@ class Detectors:
             
             if counter>neg_threshold:
                 unfiltered_section = unfiltered_ecg[thi_list[-1]-int(0.01*self.fs):i]
-                r_peaks.append(np.argmax(unfiltered_section)+thi_list[-1]-int(0.01*self.fs))
+                r_peaks.append(np.argmax(self.engzee_fake_delay + unfiltered_section)+thi_list[-1]-int(0.01*self.fs))
                 counter = 0
                 thi = False
                 thf = False
